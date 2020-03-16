@@ -1,0 +1,50 @@
+.sdk-cell {
+  display: flex;
+  border: black 1px solid;
+  align-items: center;
+  justify-content: center;
+  background-color: #f7f7f7;
+  font-size: 200%;
+  font-weight: Bold;
+  position: relative;
+
+  @import "./borders.scss";
+
+  &.target {
+    background-color: pink;
+  }
+
+  &.source {
+    background-color: lightblue;
+  }
+
+  &.selected {
+    filter: brightness(75%);
+  }
+
+  &.selected:hover {
+    background-color: lightcoral;
+  }
+
+  &:hover {
+    background-color: yellow;
+  }
+  & > .sdk-number {
+    &.starting {
+      color: #0f0f0f;
+    }
+
+    &.state {
+      color: #5f5f5f;
+    }
+  }
+  & > .cell-options {
+    & > .cell-option.target {
+      color: red;
+    }
+
+    & > .cell-option.source {
+      color: green;
+    }
+  }
+}

@@ -1,0 +1,59 @@
+[package]
+name = "websolver"
+description = "websolver"
+version = "0.1.0"
+authors = ["Pepijn Dragt <pepijn.dragt@gmail.com>"]
+categories = ["wasm"]
+readme = "README.md"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = [
+    "alloc", 
+    "webui"
+]
+alloc = ["wee_alloc"]
+webui = []
+worker = ["alloc"]
+
+[dependencies]
+solver = { version = "0.1.0", path = "../solver" }
+
+js-sys = "0.3.45"
+lazy_static = "1.4.0"
+serde = { version="1.0.118", features=["derive"] }
+wasm-bindgen = {version="0.2.69", features=["serde-serialize"]}
+console_error_panic_hook = "0.1.5"
+
+wee_alloc = { version = "0.4.2", optional=true }
+
+[dependencies.web-sys]
+version = "0.3.46"
+features = [
+    "console", 
+    "Window", 
+    "Document", 
+    "Node",
+    "NodeList",
+    "Performance",
+    "CssStyleDeclaration", 
+    "HtmlElement", 
+    "HtmlInputElement", 
+    "HtmlButtonElement", 
+    "HtmlDivElement", 
+    "HtmlSpanElement", 
+    "EventTarget", 
+    "MouseEvent", 
+    "KeyboardEvent", 
+    "InputEvent", 
+]
+
+# These crates are used for running unit tests.
+[dev-dependencies]
+wasm-bindgen-test = "0.3.19"
+wasm-bindgen-futures = "0.4.19"
+futures = "0.3.8"
+js-sys = "0.3.45"

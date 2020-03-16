@@ -1,0 +1,31 @@
+.sdk-box {
+  display: flex;
+  justify-content: center;
+  padding-top: 1em;
+  padding-bottom: 1em;
+  & > .sdk {
+    justify-self: center;
+    display: inline-block;
+    position: relative;
+    width: 66%;
+    & > .sdk-dummy {
+      margin-top: 100%;
+    }
+    & > .sdk-sudoku {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      border: black 1px solid;
+      cursor: pointer;
+
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+
+      @import './cell.scss';
+    }
+  }
+}
+

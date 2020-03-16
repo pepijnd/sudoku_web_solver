@@ -1,0 +1,160 @@
+@import './sudoku.scss';
+
+html * {
+  font-family: Helvetica, Arial, sans-serif;
+  background-color: #f0f0f0;
+}
+
+.sudoku-numbers {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  & > button {
+    width: 50px;
+    height: 50px;
+    margin: 4px;
+    font-size: 2em;
+  }
+}  
+
+.solve-options {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin-top: 5px;
+}
+
+.solve-options button {
+  width: 80px;
+  height: 35px;
+  padding: 0px;
+  margin-left: 2px;
+  margin-right: 2px;
+  font-size: 1em;
+  font-weight: bold;
+}
+
+.step-actions {
+  margin-top: 15px;
+  padding-left: 5%;
+  padding-right: 5%;
+}
+
+.app {
+  display: flex;
+  grid-template-columns: 1fr auto;
+  justify-content: center;
+}
+
+.app-main {
+  max-width: 80vmin;
+  width: 80vmin;
+}
+
+.app-options {
+  display: none;
+}
+
+.text-inline {
+  display: inline;
+}
+
+.step-slider {
+  width: 90%;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top: 8px;
+  position: relative;
+}
+
+.slider-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.slider-bubble-track {
+  position: absolute;
+  left: 4.25%;
+  right: 3.25%;
+  top: 0;
+  z-index: 10;
+  background: transparent;
+  pointer-events: none;
+}
+
+.slider-bubble {
+  width: 30px;
+  background: transparent;
+  position: relative;
+  left: var(--step-place);
+  margin-left: -15px;
+  text-align: center;
+  font-size: 1.25em;
+}
+
+.slider-bubble::after {
+  content: var(--step-display);
+}
+
+input[type="range"].slider-input::-moz-range-thumb {
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  background: white;
+}
+
+input[type="range"].slider-input::-moz-range-track {
+  width: 100%;
+  cursor: pointer;
+  background: black;
+}
+
+.step-actions {
+  display: flex;
+  flex-direction: row;
+}
+
+.step-actions button {
+  margin-left: 2px;
+  margin-right: 2px;
+  padding: 0px;
+  height: 40px;
+  width: 45px;
+  font-size: 1.25em;
+  font-weight: bolder;
+}
+
+.sdk-btn {
+  border-radius: 8px;
+}
+
+.cell-options {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding-top: 5%;
+  padding-bottom: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  font-size: x-small;
+  text-align: center;
+  background: transparent;
+}
+
+.cell-options > * {
+  background: transparent;
+}
+
+.sdk-number {
+  background: transparent;
+}
+
+*.hidden {
+  display: none;
+}
