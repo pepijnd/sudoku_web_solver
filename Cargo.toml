@@ -1,5 +1,5 @@
 [workspace]
-members = ["websolver", "solver"]
+members = ["websolver", "solver", "webelements", "we-derive"]
 
 [profile.release]
 lto = true
