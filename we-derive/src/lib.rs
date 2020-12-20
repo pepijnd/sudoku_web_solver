@@ -4,11 +4,39 @@ use html_parser::{Dom, Node};
 use proc_macro2::{Ident, LineColumn, TokenStream, TokenTree};
 
 use quote::{format_ident, quote, quote_spanned};
+use syn::{parse::Parser, parse_macro_input, DeriveInput};
+
+struct DomParsed {
+    fields: Vec<syn::Field>,
+    build: TokenStream,
+    errors: TokenStream,
+}
+
+fn parse_args(args: TokenStream) -> DomParsed {
+    let args: Vec<TokenTree> = args.into_iter().collect();
+    let dom = parse_dom(&args);
+    match dom {
+        Ok(dom) => gen_element(dom),
+        Err(e) => {
+            let e = e.to_string();
+            let dom_start = args.first().unwrap().span();
+            let dom_end = args.last().unwrap().span();
+            let dom_span = dom_start.join(dom_end).unwrap();
+            DomParsed {
+                fields: Default::default(),
+                build: quote! {},
+                errors: quote_spanned! {
+                    dom_span => compile_error!(#e)
+                },
+            }
+        }
+    }
+}
 
 fn parse_dom(input: &[TokenTree]) -> html_parser::Result<Dom> {
     let mut html = String::new();
     let mut end: Option<LineColumn> = None;
-    let mut offset = None;
+    let mut offset: Option<usize> = None;
     for token in input {
         let span = token.span().start();
         if offset.is_none() {
@@ -100,96 +128,84 @@ fn walk_dom(dom: &[Node], refs: &mut Vec<(String, String)>) -> Vec<TokenStream> 
     elements
 }
 
-fn gen_element(ident: Ident, dom: Dom) -> TokenStream {
+fn gen_element(dom: Dom) -> DomParsed {
     let mut refs: Vec<(String, String)> = Vec::new();
+    let mut errors = quote! {};
     if dom.children.len() != 1 {
-        return quote! {
+        errors = quote! {
+            #errors
             compile_error!("DOM should contain 1 root")
-        }
+        };
     }
     let elements = walk_dom(&dom.children, &mut refs);
     let root = elements.first().unwrap();
-    let ref_name = refs.iter().map(|(s, _)| format_ident!("{}", s));
-    let ref_member = ref_name.clone();
-    let ref_value = refs.iter().map(|(s, _)| format_ident!("_m_{}", s));
-    let ref_decl = ref_value.clone();
+    let ref_name: Vec<Ident> = refs.iter().map(|(s, _)| format_ident!("{}", s)).collect();
+    let ref_value: Vec<Ident> = refs
+        .iter()
+        .map(|(s, _)| format_ident!("_m_{}", s))
+        .collect();
     let token = quote!(
-        struct #ident {
-            root: Element,
-            #( #ref_name: Element, )*
-        }
-
-        impl #ident {
-            fn new() -> Self {
-                #( let mut #ref_decl = None; )*
-                let _e_root = {#root};
-                Self {
-                    root: _e_root,
-                    #( #ref_member: #ref_value.unwrap(),)*
-                }
+        fn build() -> Self {
+            #( let mut #ref_value = None; )*
+            let _e_root = {#root};
+            Self {
+                root: _e_root,
+                #( #ref_name: #ref_value.unwrap(),)*
             }
         }
     );
-    token
+    DomParsed {
+        fields: refs
+            .iter()
+            .map(|(s, _)| {
+                let ident = format_ident!("{}", s);
+                syn::Field::parse_named
+                    .parse2(quote! { pub #ident: Element })
+                    .unwrap()
+            })
+            .collect(),
+        build: token,
+        errors,
+    }
 }
 
-#[proc_macro]
-pub fn we_element(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = TokenStream::from(input).into_iter().collect::<Vec<_>>();
-    if let [ident_tt, sep_tt, dom_tt @ ..] = input.as_slice() {
-        let ident = if let TokenTree::Ident(ident) = ident_tt {
-            ident.clone()
-        } else {
-            return quote_spanned! {
-                ident_tt.span() => compile_error!("expected Identifier");
-            }
-            .into();
-        };
-        if let TokenTree::Punct(punct) = sep_tt {
-            if punct.as_char() != ',' {
-                return quote_spanned! {
-                    sep_tt.span() => compile_error!("expected ','");
+#[proc_macro_attribute]
+pub fn we_element(
+    args: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let mut ast = parse_macro_input!(input as DeriveInput);
+    let ident = ast.ident.clone();
+    let DomParsed {
+        fields,
+        build,
+        errors,
+    } = parse_args(args.into());
+    match &mut ast.data {
+        syn::Data::Struct(ref mut struct_data) => {
+            if let syn::Fields::Named(s_fields) = &mut struct_data.fields {
+                s_fields.named.push(syn::Field::parse_named
+                    .parse2(quote! { pub root: Element })
+                    .unwrap());
+                for field in fields.iter() {
+                    s_fields.named.push(field.clone())
                 }
-                .into();
             }
-        } else {
-            return quote_spanned! {
-                sep_tt.span() => compile_error!("expected ','");
-            }
-            .into();
-        }
+            quote! {
+                #ast
 
-        if dom_tt.is_empty() {
-            return quote! {
-                compile_error!("expected 2 arguments");
-            }
-            .into();
-        }
-
-        let dom_start = dom_tt.first().unwrap().span();
-        let dom_end = dom_tt.last().unwrap().span();
-        let dom_span = dom_start.join(dom_end).unwrap();
-
-        match parse_dom(dom_tt) {
-            Ok(dom) => {
-                let tokens = gen_element(ident, dom);
-                println!("{}", tokens.to_string());
-                tokens.into()
-            }
-            Err(e) => {
-                let e = format!("Error parsing html: {}", e);
-                let tokens = quote_spanned! {
-                    dom_span => compile_error!(#e);
-                };
-                tokens.into()
+                impl WebElement for #ident {
+                    #build
+                }
             }
         }
-    } else {
-        let tokens = quote! {
-            compile_error!("expected 2 arguments");
-        };
-        tokens.into()
-    }
+        _ => {
+            quote! {
+                #errors
+                compile_error!("`we_element` is only valid on structs")
+            }
+        }
+    }.into()
 }
 
 #[cfg(test)]

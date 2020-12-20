@@ -1,5 +1,9 @@
 pub use we_derive::we_element;
 
+pub trait WebElement {
+    fn build() -> Self;
+}
+
 #[derive(Debug, Clone)]
 pub struct Element {}
 
@@ -31,22 +35,23 @@ impl Element {
     }
 }
 
-we_element!(TestElement,
+#[we_element(
     <div class="test">
         <p>this is a p</p>
         <div class="test another-test" atrr="testing">
             <span member="span">more testing</span>
         </div>
     </div>
-);
+)]
+struct TestElement {}
 
 
 #[cfg(test)]
 mod tests {
-    use super::TestElement;
+    use super::{TestElement, WebElement};
 
     #[test]
     fn test() {
-        TestElement::new();
+        TestElement::build();
     }
 }
