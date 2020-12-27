@@ -6,3 +6,28 @@ edition = "2018"
 
 [dependencies]
 we-derive = { path="../we-derive", version="0.1.0" }
+wasm-bindgen = {version="0.2.69", features=["serde-serialize"]}
+
+[dependencies.web-sys]
+version = "0.3.46"
+features = [
+    "console", 
+    "Window", 
+    "Document", 
+    "Node",
+    "NodeList",
+    "Performance",
+    "CssStyleDeclaration", 
+    "HtmlElement", 
+    "HtmlInputElement", 
+    "HtmlButtonElement", 
+    "HtmlDivElement", 
+    "HtmlSpanElement", 
+    "EventTarget", 
+    "MouseEvent", 
+    "KeyboardEvent", 
+    "InputEvent", 
+]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.19"

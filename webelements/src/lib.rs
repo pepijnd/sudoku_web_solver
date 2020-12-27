@@ -1,57 +1,68 @@
-pub use we_derive::we_element;
+pub mod element;
 
-pub trait WebElement {
-    fn build() -> Self;
+use std::fmt::Display;
+
+use wasm_bindgen::JsValue;
+
+pub use we_derive::{we_builder, WebElement};
+pub use element::{Element, WebElement, WebElementBuilder, elem};
+
+#[non_exhaustive]
+#[derive(Debug)]
+pub enum Error {
+    JsError(JsValue),
+    Cast(&'static str),
+    Window,
+    Document,
 }
 
-#[derive(Debug, Clone)]
-pub struct Element {}
-
-impl Element {
-    pub fn new(name: impl AsRef<str>) -> Element {
-        let _name = name;
-        todo!()
-    }
-
-    pub fn append(&self, other: &Self) {
-        let _other = other;
-        todo!()
-    }
-
-    pub fn add_class(&self, class: impl AsRef<str>) {
-        let _class = class;
-        todo!()
-    }
-
-    pub fn set_attr(&self, key: impl AsRef<str>, value: impl AsRef<str>) {
-        let _key = key;
-        let _value = value;
-        todo!()
-    }
-
-    pub fn set_text(&self, text: impl AsRef<str>) {
-        let _text = text;
-        todo!()
+impl From<JsValue> for Error {
+    fn from(from: JsValue) -> Self {
+        Error::JsError(from)
     }
 }
 
-#[we_element(
-    <div class="test">
-        <p>this is a p</p>
-        <div class="test another-test" atrr="testing">
-            <span member="span">more testing</span>
-        </div>
-    </div>
-)]
-struct TestElement {}
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::JsError(s) => {
+                if let Some(s) = s.as_string() {
+                    write!(f, "{}", s)
+                } else {
+                    Err(std::fmt::Error)
+                }
+            }
+            Error::Cast(t) => writeln!(f, "unable to cast value to type `{}`", t),
+            n => writeln!(f, "{:?}", n)
+        }
+    }
+}
 
+impl Error {
+    pub fn as_jsvalue(&self) -> JsValue {
+        if let Self::JsError(jsvalue) = self {
+            jsvalue.clone()
+        } else {
+            JsValue::from_str(&self.to_string())
+        }
+    }
+}
 
-#[cfg(test)]
-mod tests {
-    use super::{TestElement, WebElement};
+impl std::error::Error for Error {}
 
-    #[test]
-    fn test() {
-        TestElement::build();
+pub type Result<T> = std::result::Result<T, Error>;
+
+fn window() -> Result<web_sys::Window> {
+    web_sys::window().ok_or(Error::Window)
+}
+
+fn document() -> Result<web_sys::Document> {
+    window()?.document().ok_or(Error::Document)
+}
+
+#[allow(unused_unsafe)]
+pub fn log(str: &str) {
+    unsafe {
+        web_sys::console::log_1(&JsValue::from_str(str));
     }
 }

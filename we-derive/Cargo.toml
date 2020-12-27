@@ -11,4 +11,4 @@ proc-macro = true
 html_parser = "0.5.0"
 quote = "1.0.7"
 proc-macro2 = { version="1.0.24", features=["span-locations"] }
-syn = "1.0.54"
+syn = { version="1.0.54", features=["extra-traits"]}
