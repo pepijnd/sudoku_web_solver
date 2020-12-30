@@ -10,6 +10,7 @@ use syn::{parse::Parser, parse_macro_input, DeriveInput};
 struct DomParsed {
     fields: Vec<syn::Field>,
     root_type: Option<syn::Path>,
+    root_is_element: bool,
     build: TokenStream,
     errors: TokenStream,
 }
@@ -19,6 +20,7 @@ static ELEM_INPUT: &[(&str, &str, &str)] = &[
     ("p", "Paragraph", "HtmlElement"),
     ("span", "Span", "HtmlSpanElement"),
     ("input", "Input", "HtmlInputElement"),
+    ("button", "Button", "HtmlButtonElement"),
 ];
 
 fn parse_args(args: TokenStream, s_fields: &syn::FieldsNamed) -> DomParsed {
@@ -34,6 +36,7 @@ fn parse_args(args: TokenStream, s_fields: &syn::FieldsNamed) -> DomParsed {
             DomParsed {
                 fields: Default::default(),
                 root_type: None,
+                root_is_element: true,
                 build: quote! {},
                 errors: quote_spanned! {
                     dom_span => compile_error!(#e)
@@ -187,7 +190,7 @@ fn walk_dom(dom: &[Node], refs: &mut Vec<(Ident, syn::Path)>) -> Vec<(bool, Toke
             let repeat_field = field_ident.clone();
             let element_builder = match is_custom.as_ref() {
                 Some(custom) => {
-                    quote! { <#custom as webelements::WebElementBuilder<_>>::build() }
+                    quote! { <#custom as webelements::WebElementBuilder>::build() }
                 }
                 None => quote! { <#elem_type>::new() },
             };
@@ -242,6 +245,7 @@ fn gen_element(dom: Dom, s_fields: &syn::FieldsNamed) -> DomParsed {
             compile_error!("DOM should contain 1 root")
         };
     }
+    let mut root_is_element = true;
     let root_type = dom
         .children
         .first()
@@ -254,12 +258,18 @@ fn gen_element(dom: Dom, s_fields: &syn::FieldsNamed) -> DomParsed {
                         None
                     }
                 });
-                syn::parse2::<syn::Path>(quote! { webelements::elem::#name }).ok()
+                if let Some(name) = name {
+                    syn::parse2::<syn::Path>(quote! { webelements::elem::#name }).ok()
+                } else {
+                    root_is_element = false;
+                    let name = format_ident!("{}", e.name);
+                    syn::parse2::<syn::Path>(quote! { #name }).ok()
+                }
             } else {
                 None
             }
         })
-        .unwrap();
+        .unwrap_or_else(|| { errors = quote! { #errors; compile_error!("no root found") }; None } );
     let elements = walk_dom(&dom.children, &mut refs);
     let root = &elements.first().unwrap().1;
     let ref_name: Vec<Ident> = refs.iter().map(|(s, _)| format_ident!("{}", s)).collect();
@@ -278,7 +288,7 @@ fn gen_element(dom: Dom, s_fields: &syn::FieldsNamed) -> DomParsed {
                 #( #fields: <#types as Default>::default(),)*
                 #( #ref_name: #ref_value.unwrap(),)*
             };
-            <Self as webelements::WebElement<_>>::init(&mut element);
+            <Self as webelements::WebElement>::init(&mut element)?;
             Ok(element)
         }
     );
@@ -292,55 +302,10 @@ fn gen_element(dom: Dom, s_fields: &syn::FieldsNamed) -> DomParsed {
             })
             .collect(),
         root_type,
+        root_is_element,
         build: token,
         errors,
     }
-}
-
-#[proc_macro_derive(WebElement)]
-pub fn we_element_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let ast = parse_macro_input!(input as DeriveInput);
-
-    let gen = if let syn::Data::Struct(s) = ast.data {
-        if let syn::Fields::Named(f) = s.fields {
-            let f = f
-                .named
-                .iter()
-                .find(|f| f.ident.as_ref().unwrap() == "root")
-                .unwrap();
-            if let syn::Type::Path(p) = &f.ty {
-                let seg = p
-                    .path
-                    .segments
-                    .iter()
-                    .find_map(|s| {
-                        if let syn::PathArguments::AngleBracketed(gen) = &s.arguments {
-                            let gen = gen.args.first().unwrap();
-                            Some(gen.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .unwrap();
-                quote! { #seg }
-            } else {
-                quote! { compile_error!("type of root field not found") }
-            }
-        } else {
-            quote! { compile_error!("root field not found") }
-        }
-    } else {
-        quote! { compile_error!("can only implement for data structs") }
-    };
-
-    let ident = ast.ident;
-
-    (quote! {
-        impl webelements::WebElement<#gen> for #ident {
-            fn init(&mut self) { }
-        }
-    })
-    .into()
 }
 
 #[proc_macro_attribute]
@@ -356,12 +321,23 @@ pub fn we_builder(
                 let DomParsed {
                     fields,
                     root_type,
+                    root_is_element,
                     build,
                     errors,
                 } = parse_args(args.into(), s_fields);
+                let elem = if root_is_element {
+                    quote! { #root_type }
+                } else {
+                    quote! { <#root_type as WebElementBuilder>::Elem }
+                };
+                let root = if root_is_element {
+                    quote! { webelements::Element<#root_type> }
+                } else {
+                    quote! { #root_type }
+                };
                 s_fields.named.push(
                     syn::Field::parse_named
-                        .parse2(quote! { pub root: webelements::Element<#root_type> })
+                        .parse2(quote! { pub root: #root })
                         .unwrap(),
                 );
                 for field in fields.iter() {
@@ -372,17 +348,23 @@ pub fn we_builder(
                     #errors
                     #ast
 
-                    impl webelements::WebElementBuilder<#root_type> for #ident {
-                        #build
+                    impl webelements::WebElementBuilder for #ident {
+                        type Elem = #elem;
 
-                        fn root(&self) -> &webelements::Element<#root_type> {
-                            &self.root
+                        #build
+                    }
+
+                    impl AsRef<webelements::Element<<Self as webelements::WebElementBuilder>::Elem>> for #ident {
+                        fn as_ref(&self) -> &webelements::Element<<Self as webelements::WebElementBuilder>::Elem> {
+                            self.root.as_ref()
                         }
                     }
 
-                    impl AsRef<webelements::Element<#root_type>> for #ident {
-                        fn as_ref(&self) -> &webelements::Element<#root_type> {
-                            self.root()
+                    impl std::ops::Deref for #ident {
+                        type Target=webelements::Element<<Self as webelements::WebElementBuilder>::Elem>;
+                    
+                        fn deref(&self) -> &Self::Target {
+                            self.root.as_ref()
                         }
                     }
                 }
@@ -396,6 +378,20 @@ pub fn we_builder(
     };
     println!("{}", tokens);
     tokens
+}
+
+
+#[proc_macro_derive(WebElement)]
+pub fn we_element_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    let ident = ast.ident;
+
+    (quote! {
+        impl webelements::WebElement for #ident {
+            fn init(&mut self) -> webelements::Result<()> { Ok(()) }
+        }
+    })
+    .into()
 }
 
 #[proc_macro]

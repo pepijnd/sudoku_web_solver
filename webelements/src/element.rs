@@ -1,13 +1,16 @@
+use std::{convert::TryInto, str::FromStr};
+
 use elem::ElemTy;
-use wasm_bindgen::JsCast;
-use web_sys::HtmlElement;
+use wasm_bindgen::{prelude::Closure, JsCast};
+use web_sys::{HtmlElement, InputEvent};
 
 use crate::{document, Error, Result};
 
+pub use web_sys::MouseEvent;
 
 pub mod elem {
     use wasm_bindgen::JsCast;
-    use we_derive::{element_types};
+    use we_derive::element_types;
     pub trait ElemTy {
         type Elem: AsRef<web_sys::Element>;
         fn make() -> crate::Result<Self::Elem>;
@@ -15,30 +18,40 @@ pub mod elem {
     element_types!();
 }
 
-pub trait WebElementBuilder<E> where E: ElemTy {
+pub trait WebElementBuilder
+{
+    type Elem: ElemTy;
     fn build() -> Result<Self>
     where
         Self: std::marker::Sized;
-
-    fn root(&self) -> &Element<E>;
 }
 
-pub trait WebElement<E>: WebElementBuilder<E> where E: ElemTy {
-    fn init(&mut self);
+pub trait WebElement: WebElementBuilder
+{
+    fn init(&mut self) -> Result<()>;
 }
 
 #[derive(Debug, Clone)]
-pub struct Element<E> where E: ElemTy {
+pub struct Element<E>
+where
+    E: ElemTy,
+{
     element: E::Elem,
 }
 
-impl<E> AsRef<Element<E>> for Element<E> where E: ElemTy {
+impl<E> AsRef<Element<E>> for Element<E>
+where
+    E: ElemTy,
+{
     fn as_ref(&self) -> &Element<E> {
         self.root()
     }
 }
 
-impl<E> Element<E> where E: ElemTy {
+impl<E> Element<E>
+where
+    E: ElemTy,
+{
     pub fn new() -> Result<Element<E>> {
         let element = E::make()?;
         Ok(Self { element })
@@ -52,12 +65,17 @@ impl<E> Element<E> where E: ElemTy {
         &self.element.as_ref()
     }
 
-    pub fn append(&self, other: impl AsRef<Element<E>>) -> Result<()> {
-        self.element.as_ref().append_child(other.as_ref().as_node())?;
+    pub fn append<T: ElemTy>(&self, other: impl AsRef<Element<T>>) -> Result<()> {
+        self.element
+            .as_ref()
+            .append_child(other.as_ref().as_node())?;
         Ok(())
     }
 
-    pub fn append_list(&self, items: impl IntoIterator<Item=impl AsRef<Element<E>>>) -> Result<()> {
+    pub fn append_list<T: ElemTy>(
+        &self,
+        items: impl IntoIterator<Item = impl AsRef<Element<T>>>,
+    ) -> Result<()> {
         items.into_iter().try_for_each(|i| self.append(i))
     }
 
@@ -129,5 +147,60 @@ impl<E> Element<E> where E: ElemTy {
         self.as_element()
             .set_attribute(name.as_ref(), value.as_ref())?;
         Ok(())
+    }
+
+    pub fn del_attr(&self, name: impl AsRef<str>) -> Result<()> {
+        self.as_element()
+            .remove_attribute(name.as_ref())?;
+        Ok(())
+    }
+
+    pub fn attr(&self, name: impl AsRef<str>) -> Option<String> {
+        self.as_element()
+            .get_attribute(name.as_ref())
+    }
+
+
+    pub fn on_click(&self, mut callback: impl FnMut(MouseEvent) + 'static ) -> Result<()> {
+        let closure = Closure::wrap(Box::new( move |e| {
+            callback(e)
+        }) as Box<dyn FnMut(MouseEvent)>);
+        self.as_element()
+            .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())
+            .map_err(Error::JsError)?;
+        closure.forget();
+        Ok(())
+    }
+}
+
+impl Element<elem::Button> {
+}
+
+impl Element<elem::Input> {
+    pub fn on_input(&self, mut callback: impl FnMut(InputEvent) + 'static ) -> Result<()> {
+        let closure = Closure::wrap(Box::new( move |e| {
+            callback(e)
+        }) as Box<dyn FnMut(InputEvent)>);
+        self.as_element()
+            .add_event_listener_with_callback("input", closure.as_ref().unchecked_ref())
+            .map_err(Error::JsError)?;
+        closure.forget();
+        Ok(())
+    }
+
+    pub fn set_min<T: ToString>(&self, value: T) {
+        self.element.set_min(&value.to_string())
+    }
+
+    pub fn set_max<T: ToString>(&self, value: T) {
+        self.element.set_min(&value.to_string())
+    }
+
+    pub fn set_value<T: ToString>(&self, value: T) {
+        self.element.set_value(&value.to_string())
+    }
+
+    pub fn get_value<T: FromStr>(&self) -> Result<T> {
+        self.element.value().parse::<T>().map_err(|_| Error::Value)
     }
 }
