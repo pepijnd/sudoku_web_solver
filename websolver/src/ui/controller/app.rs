@@ -1,18 +1,23 @@
-use crate::ui::{app::AppElement, controllers, Controller, UiController};
+use lazy_static::lazy_static;
 
 use crate::ui::{editor::EditorController, info::InfoController, sudoku::SudokuController};
 
+use webelements::{Result, WebElementBuilder};
+
 #[derive(Debug, Clone)]
 pub struct AppController {
-    pub element: Option<AppElement>,
 }
 
-impl AppController {}
+impl AppController {
+    fn get() -> &'static mut AppController {
+        lazy_static! {
+            static ref APPCONTROLLER: AppController = AppController {};
+        }
 
-impl UiController for AppController {
-    type Element = AppElement;
+        &mut APPCONTROLLER
+    }
 
-    fn update(&mut self) -> Result<(), wasm_bindgen::JsValue> {
+    fn update(&mut self) -> Result<()> {
         if let Some(element) = &self.element {
             element.update()?;
         }
@@ -32,9 +37,9 @@ impl UiController for AppController {
         self.element = Some(element)
     }
 
-    fn build(self) -> Result<crate::ui::Controller<Self>, wasm_bindgen::JsValue> {
+    fn build(self) -> Result<crate::ui::Controller<Self>> {
         let controller: Controller<Self> = self.into();
-        let element = AppElement::new()?;
+        let element = Self::Element::build()?;
         controller.set_element(element);
         Ok(controller)
     }

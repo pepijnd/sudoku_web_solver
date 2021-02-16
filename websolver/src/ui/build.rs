@@ -1,6 +1,7 @@
 #![cfg(feature = "webui")]
 
-use wasm_bindgen::JsValue;
+
+use webelements::Result;
 
 use crate::ui::{
     app::AppController,
@@ -9,25 +10,25 @@ use crate::ui::{
     sudoku::{SudokuController, SudokuStateModel},
     {controllers, models, SudokuInfo},
 };
-use crate::util::{body, ElementExt};
 
 use solver::Sudoku;
 
-pub fn build_ui() -> Result<(), JsValue> {
+pub fn build_ui() -> Result<()> {
     let app = controllers().get::<AppController>("app")?;
     let sudoku = controllers().get::<SudokuController>("sudoku")?;
     let editor = controllers().get::<EditorController>("editor")?;
     let info = controllers().get::<InfoController>("info")?;
     if let Some(element) = &app.element() {
+        app.
         element.sdk().build(&sudoku)?;
         element.main().build(&editor)?;
         element.main().build(&info)?;
-        body()?.append(&element)?;
+        element.set_as_body();
     }
     Ok(())
 }
 
-pub fn init_ui() -> Result<(), JsValue> {
+pub fn init_ui() -> Result<()> {
     models()
         .init::<SudokuStateModel>("sudoku")
         .set_start(Sudoku::from(

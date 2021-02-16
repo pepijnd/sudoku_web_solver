@@ -40,14 +40,14 @@ pub fn run() -> Result<(), JsValue> {
 #[cfg(feature = "webui")]
 #[wasm_bindgen]
 pub fn init() -> Result<(), JsValue> {
-    init_ui()?;
+    init_ui().map_err(|e|e.as_jsvalue())?;
     Ok(())
 }
 
 #[wasm_bindgen]
 #[cfg(feature = "webui")]
 pub fn start() -> Result<(), JsValue> {
-    build_ui()?;
+    build_ui().map_err(|e|e.as_jsvalue())?;
     Ok(())
 }
 
@@ -67,7 +67,7 @@ pub fn on_solve(solve: JsValue) -> Result<(), JsValue> {
 #[cfg(feature = "webui")]
 pub fn set_solver(f: &js_sys::Function) -> Result<(), JsValue> {
     controllers()
-        .get::<SudokuController>("sudoku")?
+        .get::<SudokuController>("sudoku").map_err(|e|e.as_jsvalue())?
         .set_solver(f);
     Ok(())
 }
@@ -78,8 +78,11 @@ pub fn on_measure(m: JsValue) -> Result<(), JsValue> {
     let m = m
         .into_serde::<Measure>()
         .map_err(|e| JsValue::from_str(&format!("{}", e)))?;
-    models().get::<SudokuInfo>("info")?.set_measure(m);
-    controllers().get::<EditorController>("editor")?.update()?;
+    models().get::<SudokuInfo>("info").map_err(|e|e.as_jsvalue())?.set_measure(m);
+    controllers()
+        .get::<EditorController>("editor").map_err(|e|e.as_jsvalue())?
+        .update()
+        .map_err(|e| e.as_jsvalue());
     Ok(())
 }
 

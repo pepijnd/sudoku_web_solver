@@ -1,18 +1,17 @@
-use wasm_bindgen::JsValue;
+use crate::ui::info::Info;
 
-use crate::ui::{info::InfoElement, Controller, UiController};
+use webelements::{Result, WebElementBuilder};
 
 #[derive(Debug, Clone)]
 pub struct InfoController {
-    pub element: Option<InfoElement>,
+    pub element: Option<Info>,
 }
 
 impl InfoController {}
 
-impl UiController for InfoController {
-    type Element = InfoElement;
+impl InfoController {
 
-    fn update(&mut self) -> Result<(), JsValue> {
+    fn update(&mut self) -> Result<()> {
         if let Some(element) = &self.element {
             element.update()?;
         }
@@ -27,9 +26,9 @@ impl UiController for InfoController {
         self.element = Some(element);
     }
 
-    fn build(self) -> Result<Controller<Self>, JsValue> {
+    fn build(self) -> Result<Controller<Self>> {
         let controller: Controller<Self> = self.into();
-        let element = InfoElement::new()?;
+        let element = Info::build()?;
         controller.set_element(element);
         Ok(controller)
     }

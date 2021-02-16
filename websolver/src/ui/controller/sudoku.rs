@@ -1,23 +1,22 @@
 use solver::Solve;
-use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
+use wasm_bindgen::JsValue;
 
 use crate::ui::{
     controllers, models,
-    sudoku::{SudokuElement, SudokuModel, SudokuStateModel},
+    sudoku::{Sudoku, SudokuModel, SudokuStateModel},
     Controller, SudokuInfo, UiController,
 };
-use crate::util::document;
+
+use webelements::{Result, WebElementBuilder};
 
 #[derive(Debug, Clone)]
 pub struct SudokuController {
-    pub element: Option<SudokuElement>,
     pub solver: Option<js_sys::Function>,
 }
 
 impl Default for SudokuController {
     fn default() -> Self {
         Self {
-            element: None,
             solver: None,
         }
     }
@@ -34,30 +33,21 @@ impl Controller<SudokuController> {
 }
 
 impl UiController for SudokuController {
-    type Element = SudokuElement;
+    type Element = Sudoku;
 
-    fn update(&mut self) -> Result<(), JsValue> {
+    fn update(&mut self) -> Result<()> {
         if let Some(element) = self.element.as_ref() {
             element.update();
         }
         Ok(())
     }
-
-    fn element(&self) -> Option<Self::Element> {
-        self.element.clone()
-    }
-
-    fn set_element(&mut self, element: Self::Element) {
-        self.element = Some(element);
-    }
-
-    fn build(self) -> Result<Controller<Self>, JsValue> {
+    fn build(self) -> Result<Controller<Self>> {
         let controller: Controller<Self> = self.into();
         let model = models().get::<SudokuStateModel>("sudoku").unwrap();
         let closure = {
             let controller = controller.clone();
             let model = model.clone();
-            Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
+            webelements::document()?.on_key(move |event| {
                 let selected = { model.selected() };
                 if let Some(mut selected) = selected {
                     match &*event.key() {
@@ -95,13 +85,10 @@ impl UiController for SudokuController {
                     model.set_selected(selected);
                     controller.update().unwrap();
                 }
-            }) as Box<dyn FnMut(_)>)
+            });
         };
-        document()?
-            .add_event_listener_with_callback("keydown", &closure.as_ref().unchecked_ref())?;
-        closure.forget();
         let element = {
-            let element = SudokuElement::new()?;
+            let element = Self::Element::build()?;
             for cell in element.cells() {
                 let controller = controller.clone();
                 let model = model.clone();
@@ -141,6 +128,6 @@ impl SudokuController {
         info.set_solve(solve);
         let max = *info.max();
         info.set_step(max);
-        crate::util::g_update().unwrap();
+        crate::util::global_update().unwrap();
     }
 }

@@ -33,6 +33,12 @@ impl Cell {
     }
 }
 
+impl Default for Cell {
+    fn default() -> Self {
+        Self::new(0, 0)
+    }
+}
+
 impl Display for Cell {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Cell: {{ row: {}, col: {} }}", self.row, self.col)

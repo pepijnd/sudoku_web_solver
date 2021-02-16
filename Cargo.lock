@@ -1063,7 +1063,9 @@ dependencies = [
 name = "webelements"
 version = "0.1.0"
 dependencies = [
+ "wasm-bindgen",
  "we-derive",
+ "web-sys",
 ]
 
 [[package]]
@@ -1079,7 +1081,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
- "web-sys",
+ "webelements",
  "wee_alloc",
 ]
 
