@@ -14,35 +14,45 @@ impl EntrySolver for SingleSolver {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+enum Found {
+    None,
+    Single(Cell),
+    More
+}
+
 impl SingleSolver {
     fn test(domain: Domain, state: &mut State) {
-        'value: for value in 1..=9 {
-            let mut mods = StateMod::from(state.info.tech);
-            mods.push_mark(ModMarking::Domain(domain));
-            let mut found: Option<Cell> = None;
-            for i in 0..9 {
-                let cell = domain.cell(i);
-                if *state.sudoku.cell(cell) == value {
-                    continue 'value;
+        let mut mods = StateMod::from(state.info.tech);
+        mods.push_mark(ModMarking::Domain(domain));
+        
+        let options = (0..9).map(|i| {
+            let cell = domain.cell(i);
+            (cell, state.options.options(cell, &state.sudoku))
+        }).fold([Found::None; 9], |mut a, (cell, options)| {
+            options.iter().for_each(|o| {
+                debug_assert!(o <= 9);
+                debug_assert!(o > 0);
+                let i = (o-1) as usize;
+                a[i] = match a[i] {
+                    Found::None => Found::Single(cell),
+                    Found::Single(_) => Found::More,
+                    Found::More => Found::More
                 }
-                if *state.sudoku.cell(cell) != 0 {
-                    continue;
-                }
-                if state.options.options(cell, &state.sudoku).has(value) {
-                    if found.is_some() {
-                        continue 'value;
-                    } else {
-                        found = Some(cell);
-                    }
-                }
+            });
+            a
+        });
+
+        for (index, count) in options.iter().enumerate() {
+            let value = (index + 1) as u8;
+            if let Found::Single(cell) = count {
+                state.update(*cell, value);
+                mods.push_target(CellMod::digit(*cell, value));
             }
-            if let Some(cell) = found {
-                state.update(cell, value);
-                mods.push_target(CellMod::digit(cell, value));
-            }
-            if mods.has_targets() {
-                state.info.push_mod(mods);
-            }
+        }
+
+        if mods.has_targets() {
+            state.info.push_mod(mods);
         }
     }
 }
