@@ -26,10 +26,18 @@ impl SingleSolver {
         let mut mods = StateMod::from(state.info.tech);
         mods.push_mark(ModMarking::Domain(domain));
         
-        let options = (0..9).map(|i| {
-            let cell = domain.cell(i);
-            (cell, state.options.options(cell, &state.sudoku))
-        }).fold([Found::None; 9], |mut a, (cell, options)| {
+        let options = (0..9)
+        .map(|i| {
+            domain.cell(i)
+        })
+        .filter_map(|cell| {
+            if *state.sudoku.cell(cell) == 0 {
+                Some((cell, state.options.options(cell, &state.sudoku)))
+            } else {
+                None
+            }
+        })
+        .fold([Found::None; 9], |mut a, (cell, options)| {
             options.iter().for_each(|o| {
                 debug_assert!(o <= 9);
                 debug_assert!(o > 0);
@@ -52,6 +60,7 @@ impl SingleSolver {
         }
 
         if mods.has_targets() {
+            eprintln!("{:?}", mods);
             state.info.push_mod(mods);
         }
     }
