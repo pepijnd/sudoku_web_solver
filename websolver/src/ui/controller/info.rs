@@ -1,41 +1,28 @@
-use crate::ui::info::Info;
+use std::{cell::RefCell, rc::Rc};
 
-use webelements::{Result, WebElementBuilder};
+use webelements::Result;
+
+use crate::{ui::{SudokuInfo, view::info::Info}, util::InitCell};
+
+use super::app::AppController;
 
 #[derive(Debug, Clone)]
 pub struct InfoController {
-    pub element: Option<Info>,
+    element: Info,
+    app: InitCell<AppController>,
+    pub info: Rc<RefCell<SudokuInfo>>,
 }
-
-impl InfoController {}
 
 impl InfoController {
-
-    fn update(&mut self) -> Result<()> {
-        if let Some(element) = &self.element {
-            element.update()?;
-        }
+    pub fn update(&self) -> Result<()> {
+        self.element.update(self)?;
         Ok(())
     }
-
-    fn element(&self) -> Option<Self::Element> {
-        self.element.clone()
-    }
-
-    fn set_element(&mut self, element: Self::Element) {
-        self.element = Some(element);
-    }
-
-    fn build(self) -> Result<Controller<Self>> {
-        let controller: Controller<Self> = self.into();
-        let element = Info::build()?;
-        controller.set_element(element);
-        Ok(controller)
-    }
-}
-
-impl Default for InfoController {
-    fn default() -> Self {
-        Self { element: None }
+    pub fn build(app: InitCell<AppController>, info: &Info) -> Result<Self> {
+        Ok(Self {
+            app,
+            element: info.clone(),
+            info: Rc::new(RefCell::new(SudokuInfo::default()))
+        })
     }
 }

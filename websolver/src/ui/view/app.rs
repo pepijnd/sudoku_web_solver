@@ -1,7 +1,11 @@
-use webelements::{WebElement, we_builder, Result};
+use webelements::{we_builder, Result, WebElement};
 
+use crate::ui::view::info::Info;
 use crate::ui::view::sudoku::Sudoku;
-use crate::ui::view::editor::Editor;
+use crate::{
+    ui::{controller::app::AppController, view::editor::Editor},
+    util::InitCell,
+};
 
 #[we_builder(
     <div class="app">
@@ -13,6 +17,7 @@ use crate::ui::view::editor::Editor;
                 </div>
             </div>
             <Editor we_field="editor" we_element />
+            <Info we_field="info" we_element />
         </div>
         <div class="app-options"></div>
     </div>
@@ -21,7 +26,15 @@ use crate::ui::view::editor::Editor;
 pub struct AppElement {}
 
 impl AppElement {
-    pub fn update(&self) -> Result<()> {
+    pub fn controller(&self) -> Result<InitCell<AppController>> {
+        let app = AppController::build(self)?;
+        Ok(app)
+    }
+
+    pub fn update(&self, app: &AppController) -> Result<()> {
+        self.sudoku.update(&app.sudoku)?;
+        self.editor.update(&app.editor)?;
+        self.info.update(&app.info)?;
         Ok(())
     }
 }

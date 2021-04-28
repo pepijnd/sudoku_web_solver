@@ -1,26 +1,45 @@
 use solver::Cell;
 
-use crate::ui::{model::sudoku::SudokuStateModel, models, SudokuInfo};
+use crate::{
+    ui::{
+        controller::{app::AppController, sudoku::SudokuController},
+    },
+    util::InitCell,
+};
 
-use webelements::{WebElement, we_builder};
+use webelements::{we_builder, Result, WebElement};
 
 #[we_builder(
     <div class="sdk-sudoku">
         <CellBox we_field="cells" we_repeat="81" we_element />
     </div>
 )]
-#[derive(Debug, Clone, WebElement)]
+#[derive(Debug, Clone)]
 pub struct Sudoku {}
 
+impl WebElement for Sudoku {
+    fn init(&mut self) -> Result<()> {
+        for (index, cell) in self.cells.iter_mut().enumerate() {
+            cell.set_cell(Cell::from_index(index));
+        }
+        Ok(())
+    }
+}
+
 impl Sudoku {
+    pub fn controller(&self, app: InitCell<AppController>) -> Result<SudokuController> {
+        SudokuController::build(app, self)
+    }
+
     pub fn cells(&self) -> std::slice::Iter<CellBox> {
         self.cells.iter()
     }
 
-    pub fn update(&self) {
+    pub fn update(&self, sudoku: &SudokuController) -> Result<()> {
         for cell in self.cells.iter() {
-            cell.update();
+            cell.update(sudoku);
         }
+        Ok(())
     }
 }
 
@@ -40,16 +59,20 @@ impl CellBox {
         self.cell
     }
 
-    pub fn update(&self) {
-        let model = models().get::<SudokuStateModel>("sudoku").unwrap();
-        let info = models().get::<SudokuInfo>("info").unwrap();
+    pub fn set_cell(&mut self, cell: Cell) {
+        self.cell = cell;
+        self.options.cell = cell;
+    }
+
+    pub fn update(&self, sudoku: &SudokuController) {
+        let info = sudoku.app.info.info.borrow();
+        let model = sudoku.state.borrow();
         let step = info
             .solve_step()
             .as_ref()
             .map(|s| *s.sudoku.cell(self.cell));
-
         let value = model.start().cell(self.cell);
-        debug_assert!(value <= 9, format!("invalid cell value {}", value));
+        debug_assert!(value <= 9, "invalid cell value {}", value);
         self.number.remove_class("starting state empty");
         self.remove_class("selected");
 
@@ -89,7 +112,7 @@ impl CellBox {
                 self.add_class("selected");
             }
         }
-        self.options.update();
+        self.options.update(sudoku);
     }
 }
 
@@ -98,14 +121,24 @@ impl CellBox {
         <div class="cell-option" we_field="options" we_repeat="9" />
     </div>
 )]
-#[derive(Debug, Clone, WebElement)]
-struct Options {
-    cell: Cell
+#[derive(Debug, Clone)]
+pub struct Options {
+    cell: Cell,
+}
+
+impl WebElement for Options {
+    fn init(&mut self) -> Result<()> {
+        dbg!("{:?}", &self.options);
+        for (i, cell) in self.options.iter().enumerate() {
+            cell.set_text(format!("{}", i+1));
+        }
+        Ok(())
+    }
 }
 
 impl Options {
-    fn update(&self) {
-        let info = models().get::<SudokuInfo>("info").unwrap();
+    fn update(&self, sudoku: &SudokuController) {
+        let info = sudoku.app.info.info.borrow();
         for (option, e) in self.options.iter().enumerate() {
             if let Some(step) = info.solve_step().as_ref() {
                 let index = option as u8 + 1;

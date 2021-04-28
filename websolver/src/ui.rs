@@ -3,7 +3,6 @@
 mod build;
 mod controller;
 mod model;
-mod resources;
 mod view;
 
 pub mod sudoku {
@@ -30,5 +29,5 @@ pub mod info {
 
 pub use model::info::SudokuInfo;
 
-pub use build::{build_ui, init_ui};
+pub use build::App;
 pub use view::common::*;

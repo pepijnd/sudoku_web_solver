@@ -5,11 +5,11 @@ pub struct ElimSolver;
 
 impl EntrySolver for ElimSolver {
     fn advance(&mut self, state: &mut State) -> bool {
-        for nr in 1..=9 {
+        for value in 1..=9 {
             for i in 0..9 {
-                Self::test_sqr(i, nr, state);
-                Self::test(i, SetDomain::Row, nr, state);
-                Self::test(i, SetDomain::Col, nr, state);
+                Self::test_sqr(i, value, state);
+                Self::test(i, SetDomain::Row, value, state);
+                Self::test(i, SetDomain::Col, value, state);
             }
         }
         true

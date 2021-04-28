@@ -8,7 +8,7 @@ pub enum EditorAction {
     Prev,
     Next,
     Last,
-    None
+    None,
 }
 
 impl Default for EditorAction {
@@ -35,7 +35,7 @@ impl std::fmt::Display for EditorAction {
             EditorAction::Next => ">".to_string(),
             EditorAction::Last => ">>".to_string(),
 
-            _ => "N/A".to_string()
+            _ => "N/A".to_string(),
         };
         write!(f, "{}", s)
     }

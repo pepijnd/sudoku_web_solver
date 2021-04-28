@@ -1,9 +1,12 @@
 use crate::{
-    ui::{models, SudokuInfo},
-    ui::model::info::Stat,
+    ui::{
+        controller::{app::AppController, info::InfoController},
+        model::info::Stat,
+    },
+    util::InitCell,
 };
 
-use webelements::{we_builder, WebElement, Result};
+use webelements::{we_builder, Result, WebElement};
 
 #[we_builder(
     <div class="solve-info">
@@ -24,17 +27,22 @@ impl WebElement for Info {
         self.guesses.stat = Stat::Guesses;
         self.g_steps.stat = Stat::GSteps;
         self.g_total.stat = Stat::GTotal;
+
         Ok(())
     }
 }
 
 impl Info {
-    pub fn update(&self) -> Result<()> {
-        self.tech.update()?;
-        self.steps.update()?;
-        self.guesses.update()?;
-        self.g_steps.update()?;
-        self.g_total.update()?;
+    pub fn controller(&self, app: InitCell<AppController>) -> Result<InfoController> {
+        InfoController::build(app, self)
+    }
+
+    pub fn update(&self, info: &InfoController) -> Result<()> {
+        self.tech.update(info)?;
+        self.steps.update(info)?;
+        self.guesses.update(info)?;
+        self.g_steps.update(info)?;
+        self.g_total.update(info)?;
         Ok(())
     }
 }
@@ -47,22 +55,22 @@ impl Info {
 )]
 #[derive(Debug, Clone, WebElement)]
 pub struct InfoStat {
-    stat: Stat
+    stat: Stat,
 }
 
 impl InfoStat {
-    pub fn update(&self) -> Result<()> {
-        let model = models().get::<SudokuInfo>("info")?;
+    pub fn update(&self, info: &InfoController) -> Result<()> {
+        let info = info.info.borrow();
         let stat = match self.stat {
-            Stat::Tech => { "Tech" }
-            Stat::Steps => { "Steps" }
-            Stat::Guesses => { "Guesses" }
-            Stat::GSteps => { "Total Steps" }
-            Stat::GTotal => { "Total Guesses" }
-            _ => { "N/A" }
+            Stat::Tech => "Tech",
+            Stat::Steps => "Steps",
+            Stat::Guesses => "Guesses",
+            Stat::GSteps => "Total Steps",
+            Stat::GTotal => "Total Guesses",
+            _ => "N/A",
         };
         self.label.set_text(format!("{}:", stat));
-        if let Some(value) = model.property(self.stat) {
+        if let Some(value) = info.property(self.stat) {
             self.value.set_text(&value);
         }
         Ok(())

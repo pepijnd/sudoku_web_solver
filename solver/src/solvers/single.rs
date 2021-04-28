@@ -18,38 +18,36 @@ impl EntrySolver for SingleSolver {
 enum Found {
     None,
     Single(Cell),
-    More
+    More,
 }
 
 impl SingleSolver {
     fn test(domain: Domain, state: &mut State) {
         let mut mods = StateMod::from(state.info.tech);
         mods.push_mark(ModMarking::Domain(domain));
-        
+
         let options = (0..9)
-        .map(|i| {
-            domain.cell(i)
-        })
-        .filter_map(|cell| {
-            if *state.sudoku.cell(cell) == 0 {
-                Some((cell, state.options.options(cell, &state.sudoku)))
-            } else {
-                None
-            }
-        })
-        .fold([Found::None; 9], |mut a, (cell, options)| {
-            options.iter().for_each(|o| {
-                debug_assert!(o <= 9);
-                debug_assert!(o > 0);
-                let i = (o-1) as usize;
-                a[i] = match a[i] {
-                    Found::None => Found::Single(cell),
-                    Found::Single(_) => Found::More,
-                    Found::More => Found::More
+            .map(|i| domain.cell(i))
+            .filter_map(|cell| {
+                if *state.sudoku.cell(cell) == 0 {
+                    Some((cell, state.options.options(cell, &state.sudoku)))
+                } else {
+                    None
                 }
+            })
+            .fold([Found::None; 9], |mut a, (cell, options)| {
+                options.iter().for_each(|o| {
+                    debug_assert!(o <= 9);
+                    debug_assert!(o > 0);
+                    let i = (o - 1) as usize;
+                    a[i] = match a[i] {
+                        Found::None => Found::Single(cell),
+                        Found::Single(_) => Found::More,
+                        Found::More => Found::More,
+                    }
+                });
+                a
             });
-            a
-        });
 
         for (index, count) in options.iter().enumerate() {
             let value = (index + 1) as u8;
@@ -60,7 +58,6 @@ impl SingleSolver {
         }
 
         if mods.has_targets() {
-            eprintln!("{:?}", mods);
             state.info.push_mod(mods);
         }
     }

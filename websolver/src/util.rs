@@ -1,18 +1,7 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{cell::UnsafeCell, rc::Rc};
 
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-use wasm_bindgen::JsValue;
-
+use lazy_static::__Deref;
 use serde::Deserialize;
-
-#[cfg(feature = "webui")]
-use crate::ui::{app::AppController, controllers, Controller, UiController};
-
-use webelements::Result;
-
-pub type Shared<T> = Rc<RefCell<T>>;
 
 pub enum KeyCode {
     Left,
@@ -34,7 +23,6 @@ impl From<u32> for KeyCode {
         }
     }
 }
-
 
 // pub fn measure<T, R>(mut measure: T) -> Result<(Measure, R), JsValue>
 // where
@@ -78,8 +66,65 @@ impl std::fmt::Display for Measure {
     }
 }
 
-#[cfg(feature = "webui")]
-pub fn global_update() -> Result<()> {
-    controllers().get::<AppController>("app")?.update()?;
-    Ok(())
+pub struct InitCell<T> {
+    value: Rc<UnsafeCell<Option<T>>>,
+}
+
+impl<T> std::ops::Deref for InitCell<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        let this = unsafe { &*self.value.get() };
+        if let Some(value) = &this {
+            value
+        } else {
+            panic!("value not initialized")
+        }
+    }
+}
+
+impl<T> InitCell<T> {
+    pub fn new() -> Self {
+        Self {
+            value: Rc::new(UnsafeCell::new(None)),
+        }
+    }
+
+    pub fn with(value: T) -> Self {
+        Self {
+            value: Rc::new(UnsafeCell::new(Some(value))),
+        }
+    }
+
+    pub fn init(this: &Self, value: T) {
+        let this = unsafe { &mut *this.value.get() };
+        if this.is_some() {
+            panic!("initial value already set")
+        } else {
+            this.replace(value);
+        }
+    }
+}
+
+impl<T> std::fmt::Debug for InitCell<T>
+where
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.deref().fmt(f)
+    }
+}
+
+impl<T> Default for InitCell<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> Clone for InitCell<T> {
+    fn clone(&self) -> Self {
+        Self {
+            value: Rc::clone(&self.value),
+        }
+    }
 }

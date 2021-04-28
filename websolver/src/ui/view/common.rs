@@ -1,4 +1,4 @@
-use webelements::{WebElement, we_builder};
+use webelements::{we_builder, WebElement};
 
 #[we_builder(
     <button />

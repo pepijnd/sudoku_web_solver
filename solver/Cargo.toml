@@ -8,10 +8,11 @@ edition = "2018"
 bench = false
 
 [dependencies]
-serde = { version="1.0.118", features=["derive"] }
+serde = { version="1.0.125", features=["derive"] }
+smallvec =  { version="1.6.1", features=["serde"] }
 
 [dev-dependencies]
-criterion = { version="0.3.3", default-features=false }
+criterion = { version="0.3.4", default-features=false }
 
 [[bench]]
 name = "bench_solver"

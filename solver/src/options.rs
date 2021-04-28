@@ -1,3 +1,5 @@
+#![allow(clippy::suspicious_operation_groupings)]
+
 use crate::{output::ser_array::a81, Cell, Sudoku};
 
 use serde::{Deserialize, Serialize};
@@ -155,6 +157,7 @@ pub struct OptionPair(u8, u8);
 
 impl OptionPair {
     pub fn common(&self, other: Self) -> Option<u8> {
+        // Note we compare self.0 to other.1
         if self.0 == other.0 || self.0 == other.1 {
             Some(self.0)
         } else if self.1 == other.0 || self.1 == other.1 {
@@ -262,7 +265,7 @@ impl std::fmt::Display for Options {
 
 #[cfg(test)]
 mod test {
-    use crate::{CellOptions, Cell, Sudoku};
+    use crate::{Cell, CellOptions, Sudoku};
 
     use super::Options;
 

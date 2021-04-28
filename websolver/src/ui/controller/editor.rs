@@ -1,140 +1,104 @@
 use std::convert::TryInto;
 
-use lazy_static::lazy_static;
-
-use crate::ui::{
-    editor::{EditorAction, Editor},
-    sudoku::{SudokuController, SudokuStateModel},
-    SudokuInfo
+use crate::{
+    ui::editor::{Editor, EditorAction},
+    util::InitCell,
 };
 
-use webelements::{Result, WebElementBuilder};
+use webelements::Result;
+
+use crate::ui::app::AppController;
 
 #[derive(Debug, Clone)]
-pub struct EditorController {}
-
+pub struct EditorController {
+    element: Editor,
+    pub app: InitCell<AppController>,
+}
 
 impl EditorController {
-    fn get() -> &'static mut EditorController {
-        lazy_static! {
-            static ref EDITORCONTROLLER: EditorController = EditorController {};
-        }
-
-        &mut EDITORCONTROLLER
-    }
-
-    fn update(&mut self) -> Result<()> {
-        if let Some(element) = &self.element {
-            element.update()?
-        }
+    pub fn update(&self) -> Result<()> {
+        self.element.update(self)?;
         Ok(())
     }
 
-    fn element(&self) -> Option<Self::Element> {
-        self.element.clone()
-    }
+    pub fn build(app: InitCell<AppController>, element: &Editor) -> Result<Self> {
+        element.connect(InitCell::clone(&app.editor))?;
 
-    fn set_element(&mut self, element: Editor) {
-        self.element = Some(element);
-    }
-
-    fn build(self) -> Result<Controller<Self>> {
-        let element = Self::Element::build()?;
-        let sudoku = controllers().get::<SudokuController>("sudoku").unwrap();
-        let controller: Controller<Self> = self.into();
-        let model = models().get::<SudokuStateModel>("sudoku").unwrap();
-        for btn in element.numbers.buttons {
-            if let EditorAction::SetValue(n) = btn.action() {
-                let sudoku = sudoku.clone();
-                let model = model.clone();
-                btn.on_click(Box::new(move |_event| {
-                    if let Some(cell) = model.selected() {
-                        {
-                            model.start().set_cell(cell, n);
-                            sudoku.update().unwrap();
-                        }
+        element.steps.slider.slider.on_input(Box::new({
+            let app = InitCell::clone(&app);
+            let input = element.steps.slider.slider.clone();
+            move |_event| {
+                {
+                    let mut info = app.info.info.borrow_mut();
+                    if let Ok(value) = input.get_value::<i32>() {
+                        info.set_step(value.try_into().unwrap()).unwrap();
                     }
-                }))?;
-                btn.update();
-            }
-        }
-        let input = element.steps.slider.slider;
-        let info = models().get::<SudokuInfo>("info").unwrap();
-        input.on_input(Box::new(move |_event| {
-            if let Ok(value) = input.get_value::<i32>() {
-                info.set_step(value.try_into().unwrap());
-                crate::util::global_update().unwrap();
+                }
+                app.update().unwrap();
             }
         }))?;
-        controller.set_element(element);
-        Ok(controller)
+
+        Ok(Self {
+            app,
+            element: element.clone(),
+        })
     }
-}
 
-impl EditorController {
-    pub fn on_action(action: EditorAction) -> Result<()> {
-        let model = models().get::<SudokuStateModel>("sudoku")?;
-        let info = models().get::<SudokuInfo>("info")?;
-        let sudoku = controllers().get::<SudokuController>("sudoku")?;
-        match action {
-            EditorAction::Solve => SudokuController::solve(),
-            EditorAction::Erase => {
-                model.clear_state();
-                info.clear_solve();
-                crate::util::global_update().unwrap();
-            }
-            EditorAction::Clear => {
-                model.clear_start();
-                model.clear_state();
-                info.clear_solve();
-                crate::util::global_update().unwrap();
-            }
-            EditorAction::SetValue(n) => {
-                if let Some(cell) = model.selected() {
-                    model.start().set_cell(cell, n);
-                    sudoku.update().unwrap();
-                }
-            }
-            EditorAction::First => {
-                if info.solve().is_some() {
-                    info.set_step(0);
-                    crate::util::global_update().unwrap();
-                }
-            }
-            EditorAction::Prev => {
-                if info.solve().is_some() {
-                    let step = *info.step();
-                    if step > 0 {
-                        info.set_step(step - 1);
-                        crate::util::global_update().unwrap();
+    pub fn on_action(&self, action: EditorAction) -> Result<()> {
+        let sudoku = &self.app.sudoku;
+        if let EditorAction::Solve = action {
+            sudoku.solve();
+        } else {
+            {
+                let mut model = self.app.sudoku.state.borrow_mut();
+                let mut info = self.app.info.info.borrow_mut();
+                match action {
+                    EditorAction::Erase => {
+                        model.clear_state();
+                        info.clear_solve()?;
                     }
-                }
-            }
-            EditorAction::Next => {
-                if info.solve().is_some() {
-                    let step = *info.step();
-                    if step < *info.max() {
-                        info.set_step(step + 1);
-                        crate::util::global_update().unwrap();
+                    EditorAction::Clear => {
+                        model.clear_start();
+                        model.clear_state();
+                        info.clear_solve()?;
                     }
+                    EditorAction::SetValue(n) => {
+                        if let Some(cell) = model.selected() {
+                            model.start_mut().set_cell(cell, n);
+                        }
+                    }
+                    EditorAction::First => {
+                        if info.solve().is_some() {
+                            info.set_step(0)?;
+                        }
+                    }
+                    EditorAction::Prev => {
+                        if info.solve().is_some() {
+                            let step = info.step();
+                            if step > 0 {
+                                info.set_step(step - 1)?;
+                            }
+                        }
+                    }
+                    EditorAction::Next => {
+                        if info.solve().is_some() {
+                            let step = info.step();
+                            if step < info.max() {
+                                info.set_step(step + 1)?;
+                            }
+                        }
+                    }
+                    EditorAction::Last => {
+                        if info.solve().is_some() {
+                            let max = info.max();
+                            info.set_step(max)?;
+                        }
+                    }
+                    _ => {}
                 }
             }
-            EditorAction::Last => {
-                if info.solve().is_some() {
-                    let max = *info.max();
-                    info.set_step(max);
-                    crate::util::global_update().unwrap();
-                }
-            }
-
-            _ => {}
+            sudoku.app.update()?;
         }
         Ok(())
-    }
-}
-
-impl Default for EditorController {
-    fn default() -> Self {
-        Self { element: None }
     }
 }

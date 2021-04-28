@@ -8,7 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let file = File::open(input)?;
         let reader = BufReader::new(file);
         let mut sum = 0;
-        for input in reader.lines() {
+        reader.lines().for_each(|input| {
             if let Ok(input) = input {
                 if input.len() == 81 {
                     let sudoku = Sudoku::from(input);
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-        }
+        });
         println!("guesses total: {}", sum);
     }
     println!("{:#?}", time.elapsed());
