@@ -20,6 +20,13 @@ impl Cell {
         }
     }
 
+    pub fn from_index(index: usize) -> Self {
+        Self {
+            row: index / 9,
+            col: index % 9,
+        }
+    }
+
     pub fn sqr(&self) -> usize {
         3 * (self.row / 3) + self.col / 3
     }
@@ -30,6 +37,12 @@ impl Cell {
 
     pub fn sees(&self, other: Self) -> bool {
         self.row == other.row || self.col == other.col || self.sqr() == other.sqr()
+    }
+}
+
+impl Default for Cell {
+    fn default() -> Self {
+        Self::new(0, 0)
     }
 }
 

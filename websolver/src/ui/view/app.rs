@@ -1,53 +1,41 @@
-use wasm_bindgen::JsCast;
-use wasm_bindgen::JsValue;
-use web_sys::{Element, HtmlDivElement};
+use webelements::{we_builder, Result, WebElement};
 
-use crate::element;
-use crate::util::ElementExt;
+use crate::{
+    ui::{
+        controller::app::AppController,
+        view::{editor::Editor, info::Info, sudoku::Sudoku},
+    },
+    util::InitCell,
+};
 
-#[derive(Debug, Clone)]
-pub struct AppElement {
-    element: HtmlDivElement,
-    main: HtmlDivElement,
-    sdk: HtmlDivElement,
-}
+#[we_builder(
+    <div class="app">
+        <div class="app-main" we_field="main">
+            <div class="sdk-box">
+                <div class="sdk" we_field="sdk">
+                    <div class="sdk-dummy" />
+                    <Sudoku we_field="sudoku" we_element />
+                </div>
+            </div>
+            <Editor we_field="editor" we_element />
+            <Info we_field="info" we_element />
+        </div>
+        <div class="app-options"></div>
+    </div>
+)]
+#[derive(Debug, Clone, WebElement)]
+pub struct AppElement {}
 
 impl AppElement {
-    pub fn new() -> Result<Self, JsValue> {
-        let element = element!(div "app")?;
-        let app_main = element!(div "app-main")?;
-        element.append_child(&app_main)?;
-        let sdk_box = element!(div "sdk-box")?;
-        app_main.append_child(&sdk_box)?;
-        let sdk = element!(div "sdk")?;
-        sdk_box.append_child(&sdk)?;
-        let dummy = element!(div "sdk-dummy")?;
-        sdk.append_child(&dummy)?;
-        let app_options = element!(div "app-options")?;
-        element.append_child(&app_options)?;
-        let element = Self {
-            element,
-            main: app_main,
-            sdk,
-        };
-        Ok(element)
+    pub fn controller(&self) -> Result<InitCell<AppController>> {
+        let app = AppController::build(self)?;
+        Ok(app)
     }
 
-    pub fn sdk(&self) -> &Element {
-        &self.sdk
-    }
-
-    pub fn main(&self) -> &Element {
-        &self.main
-    }
-
-    pub fn update(&self) -> Result<(), JsValue> {
+    pub fn update(&self, app: &AppController) -> Result<()> {
+        self.sudoku.update(&app.sudoku)?;
+        self.editor.update(&app.editor)?;
+        self.info.update(&app.info)?;
         Ok(())
-    }
-}
-
-impl AsRef<Element> for AppElement {
-    fn as_ref(&self) -> &Element {
-        self.element.as_ref()
     }
 }

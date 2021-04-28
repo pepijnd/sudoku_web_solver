@@ -1,86 +1,78 @@
-use wasm_bindgen::JsCast;
-use wasm_bindgen::JsValue;
-use web_sys::{Element, HtmlDivElement, HtmlSpanElement};
-
-use crate::util::ElementExt;
 use crate::{
-    element,
-    ui::{models, SudokuInfo},
+    ui::{
+        controller::{app::AppController, info::InfoController},
+        model::info::Stat,
+    },
+    util::InitCell,
 };
 
+use webelements::{we_builder, Result, WebElement};
+
+#[we_builder(
+    <div class="solve-info">
+        <InfoStat we_field="tech" we_element />
+        <InfoStat we_field="steps" we_element />
+        <InfoStat we_field="guesses" we_element />
+        <InfoStat we_field="g_steps" we_element />
+        <InfoStat we_field="g_total" we_element />
+    </div>
+)]
 #[derive(Debug, Clone)]
-pub struct InfoElement {
-    element: HtmlDivElement,
-    stats: Vec<InfoStatsElement>,
-}
+pub struct Info {}
 
-impl InfoElement {
-    pub fn new() -> Result<Self, JsValue> {
-        let element = element!(div "solve-info")?;
-        let stats = vec![
-            InfoStatsElement::new("Tech", "tech")?,
-            InfoStatsElement::new("Steps", "steps")?,
-            InfoStatsElement::new("Total Guess Steps", "guess_steps")?,
-            InfoStatsElement::new("Guesses", "guess")?,
-            InfoStatsElement::new("Total Guesses", "guess_all")?,
-        ];
-        for stat in &stats {
-            element.append_child(stat.as_ref())?;
-        }
-        let element = Self { element, stats };
-        element.update()?;
-        Ok(element)
-    }
+impl WebElement for Info {
+    fn init(&mut self) -> Result<()> {
+        self.tech.stat = Stat::Tech;
+        self.steps.stat = Stat::Steps;
+        self.guesses.stat = Stat::Guesses;
+        self.g_steps.stat = Stat::GSteps;
+        self.g_total.stat = Stat::GTotal;
 
-    pub fn update(&self) -> Result<(), JsValue> {
-        for stat in &self.stats {
-            stat.update()?;
-        }
         Ok(())
     }
 }
 
-impl AsRef<Element> for InfoElement {
-    fn as_ref(&self) -> &Element {
-        self.element.as_ref()
+impl Info {
+    pub fn controller(&self, app: InitCell<AppController>) -> Result<InfoController> {
+        InfoController::build(app, self)
+    }
+
+    pub fn update(&self, info: &InfoController) -> Result<()> {
+        self.tech.update(info)?;
+        self.steps.update(info)?;
+        self.guesses.update(info)?;
+        self.g_steps.update(info)?;
+        self.g_total.update(info)?;
+        Ok(())
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct InfoStatsElement {
-    key: &'static str,
-    element: HtmlDivElement,
-    value: HtmlSpanElement,
+#[we_builder(
+    <div class="solve-stat">
+        <span class="info-label" we_field="label" />
+        <span class="info-value" we_field="value" />
+    </div>
+)]
+#[derive(Debug, Clone, WebElement)]
+pub struct InfoStat {
+    stat: Stat,
 }
 
-impl InfoStatsElement {
-    pub fn new(label: &str, key: &'static str) -> Result<Self, JsValue> {
-        let element = element!(div "solve-stat")?;
-        let info_label = element!(span "info-label")?;
-        info_label.set_inner_text(&format!("{}: ", &label));
-        let value = element!(span "info-value")?;
-        element.append_child(&info_label)?;
-        element.append_child(&value)?;
-        let element = Self {
-            key,
-            element,
-            value,
+impl InfoStat {
+    pub fn update(&self, info: &InfoController) -> Result<()> {
+        let info = info.info.borrow();
+        let stat = match self.stat {
+            Stat::Tech => "Tech",
+            Stat::Steps => "Steps",
+            Stat::Guesses => "Guesses",
+            Stat::GSteps => "Total Steps",
+            Stat::GTotal => "Total Guesses",
+            _ => "N/A",
         };
-        element.update()?;
-        Ok(element)
-    }
-
-    pub fn update(&self) -> Result<(), JsValue> {
-        let model = models().get::<SudokuInfo>("info")?;
-        if let Some(value) = model.property(self.key) {
-            self.value.set_inner_text(&value);
+        self.label.set_text(format!("{}:", stat));
+        if let Some(value) = info.property(self.stat) {
+            self.value.set_text(&value);
         }
         Ok(())
-    }
-}
-
-impl AsRef<Element> for InfoStatsElement {
-    fn as_ref(&self) -> &Element {
-        &self.element
     }
 }

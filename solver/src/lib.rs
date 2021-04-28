@@ -163,9 +163,9 @@ pub enum ModMarking {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct StateMod {
     solver: Solver,
-    source: Vec<CellMod>,
-    target: Vec<CellMod>,
-    marks: Vec<ModMarking>,
+    source: smallvec::SmallVec<[CellMod; 6]>,
+    target: smallvec::SmallVec<[CellMod; 6]>,
+    marks: smallvec::SmallVec<[ModMarking; 4]>,
 }
 
 impl StateMod {

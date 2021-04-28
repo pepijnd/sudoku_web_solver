@@ -3,6 +3,4 @@ members = ["websolver", "solver"]
 
 [profile.release]
 lto = true
-
-[profile.dev.package.solver]
-opt-level = 3
+debug = true

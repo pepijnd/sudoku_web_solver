@@ -262,22 +262,16 @@ impl Buffer {
     }
 
     pub fn get(&mut self) -> Option<&mut Entry> {
-        match self.buffer.last_mut() {
-            Some(state) => Some(state),
-            None => None,
-        }
+        self.buffer.last_mut()
     }
 
     pub fn push(&mut self, state: Entry) -> Option<&mut Entry> {
         self.buffer.push(state);
-        Some(self.get()?)
+        self.get()
     }
 
     pub fn pop(&mut self) -> Option<Entry> {
-        match self.buffer.pop() {
-            Some(old) => Some(old),
-            None => None,
-        }
+        self.buffer.pop()
     }
 
     pub fn into_inner(self) -> Vec<Entry> {

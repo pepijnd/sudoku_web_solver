@@ -7,18 +7,18 @@ function test() {
 
 import("../pkg").then((lib) => {
   let worker = new SolverWorker();
+  let app = new lib.App();
   worker.onmessage = function (e) {
     if (e.data[0] == "init") {
       function solve(sudoku) {
         worker.postMessage([sudoku]);
       }
-      lib.init();
-      lib.set_solver(solve);
-      lib.start();
+      app.set_solver(solve);
+      app.start();
     } else if (e.data[0] == "solved") {
       console.log(e.data[1]);
-      lib.on_solve(e.data[1]);
-      lib.on_measure(e.data[2]);
+      app.on_solve(e.data[1]);
+      app.on_measure(e.data[2]);
     }
   };
   worker.postMessage(["init"]);

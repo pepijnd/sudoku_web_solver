@@ -167,7 +167,7 @@ impl Default for Backtrace {
 
 #[cfg(test)]
 mod test {
-    use crate::{CellOptions, Cell, EntrySolver, State, Sudoku};
+    use crate::{Cell, CellOptions, EntrySolver, State, Sudoku};
 
     use super::Backtrace;
 

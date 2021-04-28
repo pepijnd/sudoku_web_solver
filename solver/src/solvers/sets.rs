@@ -24,7 +24,7 @@ impl SetSolver {
         }
         let options = state.options.options(cell, &state.sudoku);
         let len = options.len();
-        let mut set = Vec::with_capacity(8);
+        let mut set = smallvec::SmallVec::<[Cell; 6]>::new();
         set.push(cell);
         for c in 0..9 {
             let cmp = domain.cell(d, c);

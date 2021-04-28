@@ -1,5 +1,5 @@
 #[derive(Debug, Copy, Clone)]
-pub enum EditorButtonAction {
+pub enum EditorAction {
     SetValue(u8),
     Solve,
     Erase,
@@ -8,25 +8,34 @@ pub enum EditorButtonAction {
     Prev,
     Next,
     Last,
+    None,
 }
 
-impl std::fmt::Display for EditorButtonAction {
+impl Default for EditorAction {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl std::fmt::Display for EditorAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            EditorButtonAction::SetValue(n) => {
+            EditorAction::SetValue(n) => {
                 if *n == 0 {
                     "_".to_string()
                 } else {
                     format!("{}", *n)
                 }
             }
-            EditorButtonAction::Solve => "Solve".to_string(),
-            EditorButtonAction::Erase => "Erase".to_string(),
-            EditorButtonAction::Clear => "Clear".to_string(),
-            EditorButtonAction::First => "<<".to_string(),
-            EditorButtonAction::Prev => "<".to_string(),
-            EditorButtonAction::Next => ">".to_string(),
-            EditorButtonAction::Last => ">>".to_string(),
+            EditorAction::Solve => "Solve".to_string(),
+            EditorAction::Erase => "Erase".to_string(),
+            EditorAction::Clear => "Clear".to_string(),
+            EditorAction::First => "<<".to_string(),
+            EditorAction::Prev => "<".to_string(),
+            EditorAction::Next => ">".to_string(),
+            EditorAction::Last => ">>".to_string(),
+
+            _ => "N/A".to_string(),
         };
         write!(f, "{}", s)
     }

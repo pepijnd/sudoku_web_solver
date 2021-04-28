@@ -1,47 +1,44 @@
-use crate::ui::{app::AppElement, controllers, Controller, UiController};
+use webelements::Result;
 
-use crate::ui::{editor::EditorController, info::InfoController, sudoku::SudokuController};
+use crate::{ui::view::app::AppElement, util::InitCell};
+
+use super::{editor::EditorController, info::InfoController, sudoku::SudokuController};
 
 #[derive(Debug, Clone)]
 pub struct AppController {
-    pub element: Option<AppElement>,
+    element: AppElement,
+    pub editor: InitCell<EditorController>,
+    pub info: InitCell<InfoController>,
+    pub sudoku: InitCell<SudokuController>,
 }
 
-impl AppController {}
+impl AppController {
+    pub fn build(element: &AppElement) -> Result<InitCell<Self>> {
+        let app = InitCell::with(AppController {
+            element: element.clone(),
+            editor: InitCell::new(),
+            info: InitCell::new(),
+            sudoku: InitCell::new(),
+        });
 
-impl UiController for AppController {
-    type Element = AppElement;
+        InitCell::init(
+            &app.sudoku,
+            app.element.sudoku.controller(InitCell::clone(&app))?,
+        );
+        InitCell::init(
+            &app.info,
+            app.element.info.controller(InitCell::clone(&app))?,
+        );
+        InitCell::init(
+            &app.editor,
+            app.element.editor.controller(InitCell::clone(&app))?,
+        );
 
-    fn update(&mut self) -> Result<(), wasm_bindgen::JsValue> {
-        if let Some(element) = &self.element {
-            element.update()?;
-        }
+        Ok(app)
+    }
 
-        controllers().get::<InfoController>("info")?.update()?;
-        controllers().get::<SudokuController>("sudoku")?.update()?;
-        controllers().get::<EditorController>("editor")?.update()?;
-
+    pub fn update(&self) -> Result<()> {
+        self.element.update(self)?;
         Ok(())
-    }
-
-    fn element(&self) -> Option<Self::Element> {
-        self.element.clone()
-    }
-
-    fn set_element(&mut self, element: Self::Element) {
-        self.element = Some(element)
-    }
-
-    fn build(self) -> Result<crate::ui::Controller<Self>, wasm_bindgen::JsValue> {
-        let controller: Controller<Self> = self.into();
-        let element = AppElement::new()?;
-        controller.set_element(element);
-        Ok(controller)
-    }
-}
-
-impl Default for AppController {
-    fn default() -> Self {
-        Self { element: None }
     }
 }

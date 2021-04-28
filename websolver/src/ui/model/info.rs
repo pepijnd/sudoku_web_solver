@@ -1,11 +1,24 @@
-use std::cell::Ref;
-
 use solver::{output::SolveStep, solvers::Solver, Options, Solve, StateMod, Sudoku};
 
-use crate::{
-    ui::{Model, UiModel},
-    util::{body, Measure},
-};
+use webelements::Result;
+
+use crate::util::Measure;
+
+#[derive(Debug, Clone, Copy)]
+pub enum Stat {
+    Tech,
+    Steps,
+    Guesses,
+    GSteps,
+    GTotal,
+    None,
+}
+
+impl Default for Stat {
+    fn default() -> Self {
+        Self::None
+    }
+}
 
 struct StateModStep<'a> {
     s_mod: &'a StateMod,
@@ -13,7 +26,7 @@ struct StateModStep<'a> {
     cache: &'a Options,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SudokuInfo {
     measure: Option<Measure>,
     solve: Option<Solve>,
@@ -22,73 +35,64 @@ pub struct SudokuInfo {
     max: usize,
 }
 
-impl UiModel for SudokuInfo {}
-
-impl Model<SudokuInfo> {
-    pub fn measure(&self) -> Ref<Option<Measure>> {
-        let s = self.borrow();
-        Ref::map(s, |s| &s.measure)
+impl SudokuInfo {
+    pub fn measure(&self) -> Option<&Measure> {
+        self.measure.as_ref()
     }
 
-    pub fn set_measure(&self, m: Measure) {
-        crate::util::log(&format!("{}", &m));
-        self.borrow_mut().measure = Some(m);
+    pub fn set_measure(&mut self, m: Measure) {
+        self.measure = Some(m);
     }
 
-    pub fn solve(&self) -> Ref<Option<Solve>> {
-        let s = self.borrow();
-        Ref::map(s, |s| &s.solve)
+    pub fn solve(&self) -> Option<&Solve> {
+        self.solve.as_ref()
     }
 
-    pub fn set_solve(&self, s: Solve) {
+    pub fn set_solve(&mut self, s: Solve) -> Result<()> {
         let max = s.iter().count().saturating_sub(1);
-        self.borrow_mut().max = max;
-        self.borrow_mut().solve = Some(s);
-        self.update_properties();
+        self.max = max;
+        self.solve = Some(s);
+        self.update_properties()?;
+        Ok(())
     }
 
-    pub fn clear_solve(&self) {
-        self.borrow_mut().solve = None;
-        self.borrow_mut().max = 0;
-        self.set_step(0);
-        self.update_properties();
+    pub fn clear_solve(&mut self) -> Result<()> {
+        self.solve.take();
+        self.s_step.take();
+        self.max = 0;
+        self.step = 0;
+        self.update_properties()?;
+        Ok(())
     }
 
-    pub fn max(&self) -> Ref<usize> {
-        let s = self.borrow();
-        Ref::map(s, |s| &s.max)
+    pub fn max(&self) -> usize {
+        self.max
     }
 
-    pub fn step(&self) -> Ref<usize> {
-        let s = self.borrow();
-        Ref::map(s, |s| &s.step)
+    pub fn step(&self) -> usize {
+        self.step
     }
 
-    pub fn solve_step(&self) -> Ref<Option<SolveStep>> {
-        let s = self.borrow();
-        Ref::map(s, |s| &s.s_step)
+    pub fn solve_step(&self) -> Option<&SolveStep> {
+        self.s_step.as_ref()
     }
 
-    pub fn set_step(&self, s: usize) {
-        self.borrow_mut().step = s;
-        let mut s_step = None;
-        {
-            let solve = self.solve();
-            if let Some(solve) = solve.as_ref() {
-                s_step = solve.iter().nth(s).cloned();
-            }
+    pub fn set_step(&mut self, s: usize) -> Result<()> {
+        if let Some(solve) = &self.solve {
+            self.s_step = solve.iter().nth(s).cloned();
+            self.step = s;
         }
-        self.borrow_mut().s_step = s_step;
-        self.update_properties();
+        self.update_properties()?;
+        Ok(())
     }
 
-    pub fn update_properties(&self) {
-        let style = body().unwrap().style();
+    pub fn update_properties(&self) -> Result<()> {
+        let style = webelements::document()?.body()?.style();
         if self.solve().is_some() {
             style
                 .set_property("--step-display", &format!("'{}'", self.step()))
                 .unwrap();
-            let ratio = 100.0 * (*self.step() as f64 / *self.max() as f64);
+            let ratio = 100.0 * (self.step() as f64 / self.max() as f64);
             style
                 .set_property("--step-place", &format!("{}%", ratio))
                 .unwrap();
@@ -96,21 +100,22 @@ impl Model<SudokuInfo> {
             style.set_property("--step-display", "'0'").unwrap();
             style.set_property("--step-place", "50%").unwrap();
         }
+        Ok(())
     }
 
-    pub fn property(&self, key: &str) -> Option<String> {
-        let solve_step = self.solve_step().clone();
+    pub fn property(&self, stat: Stat) -> Option<String> {
+        let solve_step = self.solve_step();
         if let Some(step) = solve_step {
-            match key {
-                "tech" => Some(step.solver.to_string()),
-                "steps" => self
+            match stat {
+                Stat::Tech => Some(step.solver.to_string()),
+                Stat::Steps => self
                     .solve()
                     .as_ref()
                     .map(|s| s.iter().count())
                     .map(|c| format!("{}", c)),
-                "guess" => Some(format!("{}", step.guesses)),
-                "guess_all" => Some(format!("{}", step.guesses_t)),
-                "guess_steps" => self
+                Stat::Guesses => Some(format!("{}", step.guesses)),
+                Stat::GTotal => Some(format!("{}", step.guesses_t)),
+                Stat::GSteps => self
                     .solve()
                     .as_ref()
                     .map(|s| s.iter().filter(|t| t.solver == Solver::BackTrace).count())

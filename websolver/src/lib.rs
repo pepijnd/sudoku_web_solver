@@ -4,15 +4,6 @@
 mod ui;
 mod util;
 
-#[cfg(feature = "webui")]
-use crate::ui::{build_ui, init_ui};
-#[cfg(feature = "webui")]
-use solver::Solve;
-#[cfg(feature = "webui")]
-use ui::{controllers, editor::EditorController, models, sudoku::SudokuController, SudokuInfo};
-#[cfg(feature = "webui")]
-use util::Measure;
-
 #[cfg(feature = "worker")]
 use solver::Sudoku;
 
@@ -34,52 +25,6 @@ pub fn run() -> Result<(), JsValue> {
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 
-    Ok(())
-}
-
-#[cfg(feature = "webui")]
-#[wasm_bindgen]
-pub fn init() -> Result<(), JsValue> {
-    init_ui()?;
-    Ok(())
-}
-
-#[wasm_bindgen]
-#[cfg(feature = "webui")]
-pub fn start() -> Result<(), JsValue> {
-    build_ui()?;
-    Ok(())
-}
-
-#[wasm_bindgen]
-#[cfg(not(feature = "webui"))]
-pub fn start() {}
-
-#[wasm_bindgen]
-#[cfg(feature = "webui")]
-pub fn on_solve(solve: JsValue) -> Result<(), JsValue> {
-    let solve: Solve = solve.into_serde().unwrap();
-    SudokuController::on_solve(solve);
-    Ok(())
-}
-
-#[wasm_bindgen]
-#[cfg(feature = "webui")]
-pub fn set_solver(f: &js_sys::Function) -> Result<(), JsValue> {
-    controllers()
-        .get::<SudokuController>("sudoku")?
-        .set_solver(f);
-    Ok(())
-}
-
-#[wasm_bindgen]
-#[cfg(feature = "webui")]
-pub fn on_measure(m: JsValue) -> Result<(), JsValue> {
-    let m = m
-        .into_serde::<Measure>()
-        .map_err(|e| JsValue::from_str(&format!("{}", e)))?;
-    models().get::<SudokuInfo>("info")?.set_measure(m);
-    controllers().get::<EditorController>("editor")?.update()?;
     Ok(())
 }
 

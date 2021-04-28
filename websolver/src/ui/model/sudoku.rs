@@ -1,51 +1,51 @@
 use solver::{Cell, Sudoku};
 
-use crate::ui::{Model, UiModel};
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SudokuStateModel {
-    start: Model<SudokuModel>,
-    state: Option<Model<SudokuModel>>,
+    pub start: SudokuModel,
+    pub state: Option<SudokuModel>,
     selected: Option<Cell>,
 }
 
-impl UiModel for SudokuStateModel {}
-
-impl Model<SudokuStateModel> {
-    pub fn start(&self) -> Model<SudokuModel> {
-        self.borrow().start.clone()
+impl SudokuStateModel {
+    pub fn start(&self) -> &SudokuModel {
+        &self.start
     }
 
-    pub fn set_start(&self, start: Sudoku) {
-        self.borrow_mut().start.set(start)
+    pub fn start_mut(&mut self) -> &mut SudokuModel {
+        &mut self.start
     }
 
-    pub fn clear_start(&self) {
-        self.borrow_mut().start.clear()
+    pub fn set_start(&mut self, start: Sudoku) {
+        self.start.set(start)
     }
 
-    pub fn state(&self) -> Option<Model<SudokuModel>> {
-        self.borrow().state.clone()
+    pub fn clear_start(&mut self) {
+        self.start.clear()
     }
 
-    pub fn set_state(&self, sudoku: Model<SudokuModel>) {
-        self.borrow_mut().state = Some(sudoku);
+    pub fn state(&self) -> Option<&SudokuModel> {
+        self.state.as_ref()
     }
 
-    pub fn clear_state(&self) {
-        self.borrow_mut().state = None;
+    pub fn set_state(&mut self, sudoku: SudokuModel) {
+        self.state.replace(sudoku);
+    }
+
+    pub fn clear_state(&mut self) {
+        self.state.take();
     }
 
     pub fn selected(&self) -> Option<Cell> {
-        self.borrow().selected
+        self.selected
     }
 
-    pub fn set_selected(&self, cell: Cell) {
-        self.borrow_mut().selected = Some(cell);
+    pub fn set_selected(&mut self, cell: Cell) {
+        self.selected.replace(cell);
     }
 
-    pub fn deselect(&self) {
-        self.borrow_mut().selected = None
+    pub fn deselect(&mut self) {
+        self.selected.take();
     }
 }
 
@@ -62,14 +62,13 @@ impl Default for SudokuStateModel {
 impl From<Sudoku> for SudokuStateModel {
     fn from(start: Sudoku) -> Self {
         Self {
-            start: SudokuModel::from(start).into(),
-            state: None,
-            selected: None,
+            start: SudokuModel::from(start),
+            ..Default::default()
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SudokuModel {
     sudoku: Sudoku,
 }
@@ -88,26 +87,24 @@ impl From<Sudoku> for SudokuModel {
     }
 }
 
-impl UiModel for SudokuModel {}
-
-impl Model<SudokuModel> {
-    pub fn set(&self, sudoku: Sudoku) {
-        self.borrow_mut().sudoku = sudoku;
+impl SudokuModel {
+    pub fn set(&mut self, sudoku: Sudoku) {
+        self.sudoku = sudoku;
     }
 
-    pub fn get(&self) -> Sudoku {
-        self.borrow().sudoku
+    pub fn get(&self) -> &Sudoku {
+        &self.sudoku
     }
 
     pub fn cell(&self, cell: Cell) -> u8 {
-        *self.borrow().sudoku.cell(cell)
+        *self.sudoku.cell(cell)
     }
 
-    pub fn set_cell(&self, cell: Cell, value: u8) {
-        self.borrow_mut().sudoku.set_cell(cell, value);
+    pub fn set_cell(&mut self, cell: Cell, value: u8) {
+        self.sudoku.set_cell(cell, value);
     }
 
     pub fn clear(&mut self) {
-        self.borrow_mut().sudoku = Sudoku::default()
+        self.sudoku = Sudoku::default()
     }
 }

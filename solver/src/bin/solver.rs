@@ -1,6 +1,8 @@
 use solver::Sudoku;
-use std::io::prelude::*;
-use std::{fs::File, io::BufReader};
+use std::{
+    fs::File,
+    io::{prelude::*, BufReader},
+};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let time = std::time::Instant::now();
@@ -8,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let file = File::open(input)?;
         let reader = BufReader::new(file);
         let mut sum = 0;
-        for input in reader.lines() {
+        reader.lines().for_each(|input| {
             if let Ok(input) = input {
                 if input.len() == 81 {
                     let sudoku = Sudoku::from(input);
@@ -18,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-        }
+        });
         println!("guesses total: {}", sum);
     }
     println!("{:#?}", time.elapsed());

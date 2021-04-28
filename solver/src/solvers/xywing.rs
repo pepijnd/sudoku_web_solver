@@ -1,7 +1,5 @@
 use crate::{
-    util::{SetDomain},
-    options::OptionPair,
-    Cell, CellMod, CellOptions, EntrySolver, State, StateMod,
+    options::OptionPair, util::SetDomain, Cell, CellMod, CellOptions, EntrySolver, State, StateMod,
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -27,7 +25,7 @@ impl EntrySolver for XYWingSolver {
 
 impl XYWingSolver {
     fn test_cell(cell: Cell, c_opts: CellOptions, c_pair: OptionPair, state: &mut State) {
-        let mut matches: Vec<(OptionPair, Cell)> = Vec::new();
+        let mut matches: smallvec::SmallVec<[(OptionPair, Cell); 6]> = smallvec::SmallVec::new();
         for matching in (0..9)
             .map(|i| {
                 [SetDomain::Row, SetDomain::Col, SetDomain::Sqr]

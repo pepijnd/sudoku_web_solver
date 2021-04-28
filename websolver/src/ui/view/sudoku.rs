@@ -1,116 +1,76 @@
 use solver::Cell;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{Element, HtmlDivElement, MouseEvent};
 
-use crate::util::NodeExt;
 use crate::{
-    element,
-    ui::{model::sudoku::SudokuStateModel, SudokuInfo},
+    ui::controller::{app::AppController, sudoku::SudokuController},
+    util::InitCell,
 };
-use crate::{ui::models, util::ElementExt};
 
+use webelements::{we_builder, Result, WebElement};
+
+#[we_builder(
+    <div class="sdk-sudoku">
+        <CellBox we_field="cells" we_repeat="81" we_element />
+    </div>
+)]
 #[derive(Debug, Clone)]
-pub struct SudokuElement {
-    element: HtmlDivElement,
-    cells: Box<[CellElement]>,
-}
+pub struct Sudoku {}
 
-impl AsRef<Element> for SudokuElement {
-    fn as_ref(&self) -> &Element {
-        &self.element
+impl WebElement for Sudoku {
+    fn init(&mut self) -> Result<()> {
+        for (index, cell) in self.cells.iter_mut().enumerate() {
+            cell.set_cell(Cell::from_index(index));
+        }
+        Ok(())
     }
 }
 
-impl SudokuElement {
-    pub fn new() -> Result<SudokuElement, JsValue> {
-        let element = element!(div "sdk-sudoku")?;
-        let cells = (0..81)
-            .map(|i| {
-                let cell = Cell::new(i / 9, i % 9);
-                let cell = CellElement::new(cell).unwrap();
-                element.append_child(cell.as_ref()).unwrap();
-                cell
-            })
-            .collect::<Vec<_>>()
-            .into_boxed_slice();
-        Ok(Self { element, cells })
+impl Sudoku {
+    pub fn controller(&self, app: InitCell<AppController>) -> Result<SudokuController> {
+        SudokuController::build(app, self)
     }
 
-    pub fn deep_clone(&self) -> Result<Self, JsValue> {
-        Ok(Self {
-            element: self.element.deep_clone()?,
-            cells: self
-                .cells
-                .iter()
-                .map(|e| e.deep_clone())
-                .collect::<Result<Box<[_]>, _>>()?,
-        })
-    }
-
-    pub fn cells(&self) -> std::slice::Iter<CellElement> {
+    pub fn cells(&self) -> std::slice::Iter<CellBox> {
         self.cells.iter()
     }
 
-    pub fn update(&self) {
+    pub fn update(&self, sudoku: &SudokuController) -> Result<()> {
         for cell in self.cells.iter() {
-            cell.update();
+            cell.update(sudoku);
         }
+        Ok(())
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct CellElement {
-    element: HtmlDivElement,
-    number: HtmlDivElement,
-    options: OptionsElement,
+#[we_builder(
+    <div class="sdk-cell">
+        <div class="sdk-number" we_field="number" />
+        <Options we_field="options" we_element />
+    </div>
+)]
+#[derive(Debug, Clone, WebElement)]
+pub struct CellBox {
     cell: Cell,
 }
 
-impl AsRef<Element> for CellElement {
-    fn as_ref(&self) -> &Element {
-        &self.element
-    }
-}
-
-impl CellElement {
-    pub fn new(cell: Cell) -> Result<CellElement, JsValue> {
-        let element = element!(div "sdk-cell")?;
-        let number = element!(div "sdk-number")?;
-        let options = OptionsElement::new(cell)?;
-        element.append_child(&number)?;
-        element.append_child(options.as_ref())?;
-        Ok(Self {
-            element,
-            number,
-            options,
-            cell,
-        })
-    }
-
-    pub fn deep_clone(&self) -> Result<Self, JsValue> {
-        Ok(Self {
-            element: self.element.deep_clone()?,
-            number: self.number.deep_clone()?,
-            options: self.options.deep_clone()?,
-            cell: self.cell,
-        })
-    }
-
+impl CellBox {
     pub fn cell(&self) -> Cell {
         self.cell
     }
 
-    pub fn update(&self) {
-        let model = models().get::<SudokuStateModel>("sudoku").unwrap();
-        let info = models().get::<SudokuInfo>("info").unwrap();
+    pub fn set_cell(&mut self, cell: Cell) {
+        self.cell = cell;
+        self.options.cell = cell;
+    }
+
+    pub fn update(&self, sudoku: &SudokuController) {
+        let info = sudoku.app.info.info.borrow();
+        let model = sudoku.state.borrow();
         let step = info
             .solve_step()
             .as_ref()
             .map(|s| *s.sudoku.cell(self.cell));
-
         let value = model.start().cell(self.cell);
-        debug_assert!(value <= 9, format!("invalid cell value {}", value));
+        debug_assert!(value <= 9, "invalid cell value {}", value);
         self.number.remove_class("starting state empty");
         self.remove_class("selected");
 
@@ -150,59 +110,33 @@ impl CellElement {
                 self.add_class("selected");
             }
         }
-        self.options.update();
+        self.options.update(sudoku);
     }
+}
 
-    pub fn on_click(&self, closure: Box<dyn FnMut(MouseEvent)>) -> Result<(), JsValue> {
-        let closure = Closure::wrap(closure);
-        self.element
-            .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
-        closure.forget();
+#[we_builder(
+    <div class="cell-options">
+        <div class="cell-option" we_field="options" we_repeat="9" />
+    </div>
+)]
+#[derive(Debug, Clone)]
+pub struct Options {
+    cell: Cell,
+}
+
+impl WebElement for Options {
+    fn init(&mut self) -> Result<()> {
+        dbg!("{:?}", &self.options);
+        for (i, cell) in self.options.iter().enumerate() {
+            cell.set_text(format!("{}", i + 1));
+        }
         Ok(())
     }
 }
 
-#[derive(Debug, Clone)]
-struct OptionsElement {
-    element: HtmlDivElement,
-    options: Box<[HtmlDivElement]>,
-    cell: Cell,
-}
-
-impl OptionsElement {
-    fn new(cell: Cell) -> Result<Self, JsValue> {
-        let element = element!(div "cell-options")?;
-        let options = (0..9)
-            .map(|i| {
-                let cell = element!(div "cell-option").unwrap();
-                element.append_child(&cell).unwrap();
-                cell.set_text(&format!("{}", i + 1));
-                cell
-            })
-            .collect::<Box<[_]>>();
-        let element = Self {
-            element,
-            options,
-            cell,
-        };
-        element.update();
-        Ok(element)
-    }
-
-    pub fn deep_clone(&self) -> Result<Self, JsValue> {
-        Ok(Self {
-            element: self.element.deep_clone()?,
-            options: self
-                .options
-                .iter()
-                .map(|e| e.deep_clone())
-                .collect::<Result<Box<[_]>, _>>()?,
-            cell: self.cell,
-        })
-    }
-
-    fn update(&self) {
-        let info = models().get::<SudokuInfo>("info").unwrap();
+impl Options {
+    fn update(&self, sudoku: &SudokuController) {
+        let info = sudoku.app.info.info.borrow();
         for (option, e) in self.options.iter().enumerate() {
             if let Some(step) = info.solve_step().as_ref() {
                 let index = option as u8 + 1;
@@ -225,11 +159,5 @@ impl OptionsElement {
                 }
             }
         }
-    }
-}
-
-impl AsRef<Element> for OptionsElement {
-    fn as_ref(&self) -> &Element {
-        self.element.as_ref()
     }
 }
