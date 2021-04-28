@@ -1,9 +1,7 @@
 use solver::Cell;
 
 use crate::{
-    ui::{
-        controller::{app::AppController, sudoku::SudokuController},
-    },
+    ui::controller::{app::AppController, sudoku::SudokuController},
     util::InitCell,
 };
 
@@ -130,7 +128,7 @@ impl WebElement for Options {
     fn init(&mut self) -> Result<()> {
         dbg!("{:?}", &self.options);
         for (i, cell) in self.options.iter().enumerate() {
-            cell.set_text(format!("{}", i+1));
+            cell.set_text(format!("{}", i + 1));
         }
         Ok(())
     }

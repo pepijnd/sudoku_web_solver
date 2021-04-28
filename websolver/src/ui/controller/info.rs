@@ -2,7 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use webelements::Result;
 
-use crate::{ui::{SudokuInfo, view::info::Info}, util::InitCell};
+use crate::{
+    ui::{view::info::Info, SudokuInfo},
+    util::InitCell,
+};
 
 use super::app::AppController;
 
@@ -22,7 +25,7 @@ impl InfoController {
         Ok(Self {
             app,
             element: info.clone(),
-            info: Rc::new(RefCell::new(SudokuInfo::default()))
+            info: Rc::new(RefCell::new(SudokuInfo::default())),
         })
     }
 }

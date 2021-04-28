@@ -35,7 +35,6 @@ pub struct SudokuInfo {
     max: usize,
 }
 
-
 impl SudokuInfo {
     pub fn measure(&self) -> Option<&Measure> {
         self.measure.as_ref()

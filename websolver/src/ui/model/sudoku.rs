@@ -63,7 +63,7 @@ impl From<Sudoku> for SudokuStateModel {
     fn from(start: Sudoku) -> Self {
         Self {
             start: SudokuModel::from(start),
-            .. Default::default()
+            ..Default::default()
         }
     }
 }

@@ -1,9 +1,11 @@
 use webelements::{we_builder, Result, WebElement, WebElementBuilder};
 
-use crate::ui::ButtonElement;
-use crate::ui::{editor::EditorAction};
 use crate::{
-    ui::{controller::app::AppController, editor::EditorController},
+    ui::{
+        controller::app::AppController,
+        editor::{EditorAction, EditorController},
+        ButtonElement,
+    },
     util::InitCell,
 };
 
@@ -114,9 +116,7 @@ pub struct EditorButton {
 impl EditorButton {
     pub fn connect(&self, editor: InitCell<EditorController>) -> Result<()> {
         let action = self.action;
-        self.on_click(move |_event| {
-            editor.on_action(action).unwrap()
-        })
+        self.on_click(move |_event| editor.on_action(action).unwrap())
     }
 
     pub fn update(&self, _editor: &EditorController) {

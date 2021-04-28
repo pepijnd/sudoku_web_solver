@@ -1,9 +1,10 @@
 use webelements::{we_builder, Result, WebElement};
 
-use crate::ui::view::info::Info;
-use crate::ui::view::sudoku::Sudoku;
 use crate::{
-    ui::{controller::app::AppController, view::editor::Editor},
+    ui::{
+        controller::app::AppController,
+        view::{editor::Editor, info::Info, sudoku::Sudoku},
+    },
     util::InitCell,
 };
 

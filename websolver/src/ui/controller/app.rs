@@ -21,9 +21,18 @@ impl AppController {
             sudoku: InitCell::new(),
         });
 
-        InitCell::init(&app.sudoku, app.element.sudoku.controller(InitCell::clone(&app))?);
-        InitCell::init(&app.info, app.element.info.controller(InitCell::clone(&app))?);
-        InitCell::init(&app.editor, app.element.editor.controller(InitCell::clone(&app))?);
+        InitCell::init(
+            &app.sudoku,
+            app.element.sudoku.controller(InitCell::clone(&app))?,
+        );
+        InitCell::init(
+            &app.info,
+            app.element.info.controller(InitCell::clone(&app))?,
+        );
+        InitCell::init(
+            &app.editor,
+            app.element.editor.controller(InitCell::clone(&app))?,
+        );
 
         Ok(app)
     }
