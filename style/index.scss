@@ -130,31 +130,10 @@ input[type="range"].slider-input::-moz-range-track {
   border-radius: 8px;
 }
 
-.cell-options {
-  position: absolute;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  padding-top: 5%;
-  padding-bottom: 0;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  pointer-events: none;
-  font-size: x-small;
-  text-align: center;
-  background: transparent;
-}
-
-.cell-options > * {
-  background: transparent;
-}
-
 .sdk-number {
   background: transparent;
 }
 
 *.hidden {
-  display: none;
+  display: none !important;
 }
