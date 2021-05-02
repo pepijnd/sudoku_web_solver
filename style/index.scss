@@ -9,10 +9,11 @@ html * {
   display: flex;
   justify-content: center;
   width: 100%;
+  max-width: 90vw;
   & > button {
     width: 50px;
     height: 50px;
-    margin: 4px;
+    margin: 2px;
     font-size: 2em;
   }
 }  
@@ -35,20 +36,19 @@ html * {
 }
 
 .step-actions {
-  margin-top: 15px;
+  margin-top: 25px;
   padding-left: 5%;
   padding-right: 5%;
+
+  & > .sdk-btn {
+    width: 9%;
+  }
 }
 
 .app {
   display: flex;
   grid-template-columns: 1fr auto;
   justify-content: center;
-}
-
-.app-main {
-  max-width: 80vmin;
-  width: 80vmin;
 }
 
 .app-options {
@@ -60,9 +60,9 @@ html * {
 }
 
 .step-slider {
-  width: 90%;
-  margin-left: 5px;
-  margin-right: 5px;
+  width: 64%;
+  margin-left: 8px;
+  margin-right: 8px;
   margin-top: 8px;
   position: relative;
 }
@@ -76,8 +76,8 @@ html * {
 
 .slider-bubble-track {
   position: absolute;
-  left: 4.25%;
-  right: 3.25%;
+  left: 2%;
+  right: 2%;
   top: 0;
   z-index: 10;
   background: transparent;
@@ -92,23 +92,13 @@ html * {
   margin-left: -15px;
   text-align: center;
   font-size: 1.25em;
+  margin-top: -25px;
+  border: solid black 1px;
+  border-radius: 7px;
 }
 
 .slider-bubble::after {
   content: var(--step-display);
-}
-
-input[type="range"].slider-input::-moz-range-thumb {
-  width: 35px;
-  height: 35px;
-  cursor: pointer;
-  background: white;
-}
-
-input[type="range"].slider-input::-moz-range-track {
-  width: 100%;
-  cursor: pointer;
-  background: black;
 }
 
 .step-actions {

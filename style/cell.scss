@@ -7,6 +7,7 @@
   font-size: 200%;
   font-weight: Bold;
   position: relative;
+  pointer-events: auto;
 
   @import "./borders.scss";
 
@@ -26,9 +27,12 @@
     background-color: lightcoral;
   }
 
-  &:hover {
-    background-color: yellow;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background-color: yellow;
+    }
   }
+
   & > .sdk-number {
     &.starting {
       color: #0f0f0f;

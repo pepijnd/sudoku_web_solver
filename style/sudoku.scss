@@ -3,11 +3,18 @@
   justify-content: center;
   padding-top: 1em;
   padding-bottom: 1em;
+  -webkit-tap-highlight-color: transparent;
+  & > * {
+    border: none;
+  }
   & > .sdk {
     justify-self: center;
     display: inline-block;
     position: relative;
-    width: 66.7%;
+    width: 90vmin;
+    max-width: 60vh;
+    height: 90vmin;
+    max-height: 60vh;
     & > .sdk-dummy {
       margin-top: 100%;
     }
@@ -15,7 +22,6 @@
       display: grid;
       grid-template-columns: repeat(9, 1fr);
       grid-template-rows: repeat(9, 1fr);
-      border: black 1px solid;
       cursor: pointer;
 
       position: absolute;
