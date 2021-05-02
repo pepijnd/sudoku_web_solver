@@ -1,0 +1,20 @@
+html {
+    --background-color: #f0f0f0;
+    --border-color: #0a0a0a;
+    --text-color: #0f0f0f;
+    --text-color-state: #454545;
+    --indication-color: #2020ff;
+    --target-color: #ff0000;
+    --source-color: #008f00;
+    --highlight-color: #959595;
+}
+
+@media (prefers-color-scheme: dark) {
+    html {
+        --background-color: #1e1e1e;
+        --border-color: #eaeaea;
+        --text-color: #eaeaea;
+        --text-color-state: #858585;
+        --highlight-color: #555555;
+    }
+}
