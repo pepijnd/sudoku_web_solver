@@ -7,15 +7,16 @@
   font-size: 200%;
   font-weight: Bold;
   position: relative;
+  pointer-events: auto;
 
   @import "./borders.scss";
 
   &.target {
-    background-color: pink;
+    background-color: lighten(blue, 20);
   }
 
   &.source {
-    background-color: lightblue;
+    background-color: lighten(red, 20);
   }
 
   &.selected {
@@ -26,9 +27,12 @@
     background-color: lightcoral;
   }
 
-  &:hover {
-    background-color: yellow;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background-color: yellow;
+    }
   }
+
   & > .sdk-number {
     &.starting {
       color: #0f0f0f;
@@ -39,12 +43,65 @@
     }
   }
   & > .cell-options {
+    position: absolute;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding-top: 5%;
+    padding-bottom: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    font-size: small;
+    text-align: center;
+    background: transparent;
+
+    & > .cell-option {
+      background: transparent;
+    }
+
+    & > .cell-option.digit {
+      color: blue;
+    }
+
     & > .cell-option.target {
       color: red;
     }
 
     & > .cell-option.source {
       color: green;
+    }
+  }
+
+  & > .cell-indicator {
+    position: absolute;
+    background-color: transparent;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+
+    & > .indicator {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+    }
+
+
+    & > .indicator.selected {
+      box-shadow: 0 0 1px 2px blue inset;
+    }
+
+    & > .indicator.target {
+      box-shadow: 0 0 1px 2px red inset;
+    }
+
+    & > .indicator.source {
+      box-shadow: 0 0 1px 2px green inset;
     }
   }
 }

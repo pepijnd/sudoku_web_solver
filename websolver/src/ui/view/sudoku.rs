@@ -44,6 +44,7 @@ impl Sudoku {
 #[we_builder(
     <div class="sdk-cell">
         <div class="sdk-number" we_field="number" />
+        <Indicator we_field="indicator" we_element />
         <Options we_field="options" we_element />
     </div>
 )]
@@ -60,6 +61,7 @@ impl CellBox {
     pub fn set_cell(&mut self, cell: Cell) {
         self.cell = cell;
         self.options.cell = cell;
+        self.indicator.cell = cell;
     }
 
     pub fn update(&self, sudoku: &SudokuController) {
@@ -72,17 +74,6 @@ impl CellBox {
         let value = model.start().cell(self.cell);
         debug_assert!(value <= 9, "invalid cell value {}", value);
         self.number.remove_class("starting state empty");
-        self.remove_class("selected");
-
-        self.remove_class("target");
-        self.remove_class("source");
-        if let Some(step) = info.solve_step().as_ref() {
-            if step.change.is_target(self.cell) {
-                self.add_class("target");
-            } else if step.change.is_source(self.cell) {
-                self.add_class("source");
-            }
-        }
 
         if info.solve().is_some() {
             self.options.remove_class("hidden");
@@ -105,14 +96,41 @@ impl CellBox {
             self.number.add_class("empty");
             self.number.set_text("");
         }
-        if let Some(selected) = model.selected() {
-            if selected == self.cell {
-                self.add_class("selected");
-            }
-        }
+        self.indicator.update(sudoku);
         self.options.update(sudoku);
     }
 }
+
+#[we_builder(
+    <div class="cell-indicator">
+        <div class="indicator" we_field="indicator" />
+    </div>
+)]
+#[derive(Debug, Clone, WebElement)]
+pub struct Indicator {
+    cell: Cell,
+}
+
+impl Indicator {
+    fn update(&self, sudoku: &SudokuController) {
+        let info = sudoku.app.info.info.borrow();
+        let model = sudoku.state.borrow();
+        self.indicator.remove_class("target source selected");
+        if let Some(step) = info.solve_step().as_ref() {
+            if step.change.is_target(self.cell) {
+                self.indicator.add_class("target");
+            } else if step.change.is_source(self.cell) {
+                self.indicator.add_class("source");
+            }
+        }
+        if let Some(selected) = model.selected() {
+            if selected == self.cell {
+                self.indicator.add_class("selected");
+            }
+        }
+    }
+}
+
 
 #[we_builder(
     <div class="cell-options">
@@ -138,22 +156,22 @@ impl Options {
     fn update(&self, sudoku: &SudokuController) {
         let info = sudoku.app.info.info.borrow();
         for (option, e) in self.options.iter().enumerate() {
-            if let Some(step) = info.solve_step().as_ref() {
+            if let Some(step) = info.solve_step() {
                 let index = option as u8 + 1;
                 let mut cache = step.cache;
                 e.remove_class("target");
                 e.remove_class("source");
-                if cache.options(self.cell, &step.sudoku).has(index) {
-                    e.remove_class("hidden");
-                } else {
+                e.remove_class("hidden");
+                e.remove_class("digit");
+                if !cache.options(self.cell, &step.sudoku).has(index) {
                     e.add_class("hidden");
                 }
-                if let Some(step) = info.solve_step().as_ref() {
-                    if step.change.is_target_option(self.cell, index) {
-                        e.remove_class("hidden");
+                if let Some(step) = info.solve_step() {
+                    if step.change.is_target_digit(self.cell, index) {
+                        e.add_class("digit")
+                    } else if step.change.is_target_option(self.cell, index) {
                         e.add_class("target")
                     } else if step.change.is_source_option(self.cell, index) {
-                        e.remove_class("hidden");
                         e.add_class("source")
                     }
                 }

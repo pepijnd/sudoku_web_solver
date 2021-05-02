@@ -203,6 +203,12 @@ impl StateMod {
             .any(|c| c.cell == cell && c.target.is_option(option))
     }
 
+    pub fn is_target_digit(&self, cell: Cell, digit: u8) -> bool {
+        self.target
+            .iter()
+            .any(|c| c.cell == cell && c.target.is_digit(digit))
+    }
+
     pub fn is_source(&self, cell: Cell) -> bool {
         self.source.iter().any(|c| c.cell == cell)
     }
@@ -257,6 +263,13 @@ impl ModTarget {
     fn is_option(&self, option: u8) -> bool {
         if let Self::Option(o) = self {
             return *o == option;
+        }
+        false
+    }
+
+    fn is_digit(&self, digit: u8) -> bool {
+        if let Self::Digit(d) = self {
+            return *d == digit
         }
         false
     }
