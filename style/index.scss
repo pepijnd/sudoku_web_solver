@@ -1,8 +1,14 @@
 @import './sudoku.scss';
+@import './colors.scss';
+
+:root {
+  color-scheme: dark light;
+}
 
 html * {
   font-family: Helvetica, Arial, sans-serif;
-  background-color: #f0f0f0;
+  background-color: var(--background-color);
+  color: var(--text-color);
 }
 
 .sudoku-numbers {
@@ -93,7 +99,7 @@ html * {
   text-align: center;
   font-size: 1.25em;
   margin-top: -25px;
-  border: solid black 1px;
+  border: solid var(--border-color) 1px;
   border-radius: 7px;
 }
 
@@ -126,4 +132,8 @@ html * {
 
 *.hidden {
   display: none !important;
+}
+
+.solve-info {
+  margin-top: 5px;
 }
