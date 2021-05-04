@@ -1,22 +1,43 @@
-.sdk-cell {
+.sdk-cell-container {
   display: flex;
-  border: var(--border-color) 1px solid;
   align-items: center;
   justify-content: center;
-  font-size: 200%;
-  font-weight: Bold;
-  position: relative;
-  pointer-events: auto;
+}
 
+.sdk-cell {
+  position: relative;
+  font-weight: Bold;
+  font-size: 250%;
+  pointer-events: auto;
+  border: var(--border-color) var(--border-width) solid;
+  margin: calc(-1 * var(--border-width));
+  border-collapse: collapse;
   @import "./borders.scss";
 
+  & > * {
+    pointer-events: none;
+    @include fill;
+  }
+
   @media (hover: hover) and (pointer: fine) {
-    &:hover {
+    &:hover .background {
       background-color: var(--highlight-color);
+    }
+    &.selected:hover .background {
+      background-color: var(--highlight-indicate-color);
     }
   }
 
-  & > .sdk-number {
+  &.selected .background {
+    background-color: var(--indication-color);
+  }
+
+  .sdk-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 10%;
+
     &.starting {
       color: var(--text-color);
     }
@@ -25,65 +46,87 @@
       color: var(--text-color-state);
     }
   }
-  & > .cell-options {
-    position: absolute;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    padding: 10% 5% 5% 5%;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    pointer-events: none;
-    font-size: small;
-    text-align: center;
-    background: transparent;
 
-    & > .cell-option {
-      background: transparent;
-    }
-
-    & > .cell-option.digit {
-      color: var(--indication-color);
-    }
-
-    & > .cell-option.target {
-      color: var(--target-color);
-    }
-
-    & > .cell-option.source {
-      color: var(--source-color);
+  @media only screen and (max-width: 550px) and (min-width: 450px) {
+    & {
+      font-size: 200%;
+      .sdk-number {
+        padding-top: 12.5%;
+      }
     }
   }
 
-  & > .cell-indicator {
-    position: absolute;
-    background-color: transparent;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    pointer-events: none;
-
-    & > .indicator {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: transparent;
+  @media only screen and (max-width: 450px) and (min-width: 350px) {
+    & {
+      font-size: 175%;
+      .sdk-number {
+        padding-top: 15%;
+      }
     }
+  }
 
-
-    & > .indicator.selected {
-      box-shadow: 0 0 2px 3px var(--indication-color) inset;
+  @media only screen and (max-width: 350px) {
+    & {
+      font-size: 125%;
+      .sdk-number {
+        padding-top: 17.5%;
+      }
     }
+  }
 
-    & > .indicator.target {
-      box-shadow: 0 0 2px 3px var(--target-color) inset;
-    }
+  .cell-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding: 5%;
+    font-size: small;
 
-    & > .indicator.source {
-      box-shadow: 0 0 2px 3px var(--source-color) inset;
+    .cell-option {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.digit {
+        color: var(--indication-color);
+      }
+      &.target {
+        color: var(--target-color);
+      }
+      &.source {
+        color: var(--source-color);
+      }
     }
+  }
+
+  .cell-indicator .indicator {
+    @include fill;
+    &.left,
+    &.right {
+      width: var(--indicator-size);
+    }
+    &.top,
+    &.bottom {
+      height: var(--indicator-size);
+    }
+    &.top {
+      bottom: auto;
+    }
+    &.left {
+      right: auto;
+    }
+    &.right {
+      left: auto;
+    }
+    &.bottom {
+      top: auto;
+    }
+  }
+
+  &.target .indicator {
+    background-color: var(--target-color);
+  }
+
+  &.source .indicator {
+    background-color: var(--source-color);
   }
 }
