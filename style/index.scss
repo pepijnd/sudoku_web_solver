@@ -1,11 +1,8 @@
+@import './mixins.scss';
+@import './variables.scss';
 @import './sudoku.scss';
-@import './colors.scss';
 
-:root {
-  color-scheme: dark light;
-}
-
-html * {
+html {
   font-family: Helvetica, Arial, sans-serif;
   background-color: var(--background-color);
   color: var(--text-color);
@@ -16,7 +13,7 @@ html * {
   justify-content: center;
   width: 100%;
   max-width: 90vw;
-  & > button {
+  button {
     width: 50px;
     height: 50px;
     margin: 2px;
@@ -46,7 +43,7 @@ html * {
   padding-left: 5%;
   padding-right: 5%;
 
-  & > .sdk-btn {
+  .sdk-btn {
     width: 9%;
   }
 }

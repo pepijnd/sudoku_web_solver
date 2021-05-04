@@ -45,7 +45,8 @@ module.exports = {
         new HtmlWebpackPlugin({
             title: "Sudoku Solver and Analyzer",
             meta: {
-                viewport: 'width=device-width, initial-scale=1, shrink-to-fit=no'
+                'viewport': 'width=device-width, initial-scale=1, shrink-to-fit=no',
+                'color-scheme': 'dark light'
             }
         }),
         new MiniCssExtractPlugin({

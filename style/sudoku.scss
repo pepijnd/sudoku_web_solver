@@ -1,3 +1,5 @@
+@import './cell.scss';
+
 .sdk-box {
   display: flex;
   justify-content: center;
@@ -7,7 +9,7 @@
   & > * {
     border: none;
   }
-  & > .sdk {
+  .sdk {
     justify-self: center;
     display: inline-block;
     position: relative;
@@ -15,22 +17,17 @@
     max-width: 60vh;
     height: 90vmin;
     max-height: 60vh;
-    & > .sdk-dummy {
+    .sdk-dummy {
       margin-top: 100%;
     }
-    & > .sdk-sudoku {
+    .sdk-sudoku {
+      @include fill;
       display: grid;
       grid-template-columns: repeat(9, 1fr);
       grid-template-rows: repeat(9, 1fr);
       cursor: pointer;
+      user-select: none;
 
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-
-      @import './cell.scss';
     }
   }
 }
