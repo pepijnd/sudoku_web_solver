@@ -74,6 +74,7 @@ impl<T> std::ops::Deref for InitCell<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
+        // SAFETY: we never give out any &mut references to `this.value` so immutable access is safe.
         let this = unsafe { &*self.value.get() };
         if let Some(value) = &this {
             value
@@ -97,12 +98,16 @@ impl<T> InitCell<T> {
     }
 
     pub fn init(this: &Self, value: T) {
-        let this = unsafe { &mut *this.value.get() };
-        if this.is_some() {
-            panic!("initial value already set")
-        } else {
-            this.replace(value);
+        {
+            // SAFETY: we never give out any &mut references to `this.value` so immutable access is safe.
+            let cell = unsafe { &*this.value.get() };
+            if cell.is_some() {
+                panic!("initial value already set");
+            }
         }
+        // SAFETY: `this.value` was `None`, we never give a reference until it is set therefore we can safely get an `&mut Option<T>` in this scope
+        let cell = unsafe { &mut *this.value.get() };
+        cell.replace(value);
     }
 }
 

@@ -269,7 +269,7 @@ impl ModTarget {
 
     fn is_digit(&self, digit: u8) -> bool {
         if let Self::Digit(d) = self {
-            return *d == digit
+            return *d == digit;
         }
         false
     }
