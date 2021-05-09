@@ -1,17 +1,23 @@
-&:nth-child(9n-8) {
+& {
+  border: var(--border-color) 0 solid;
+  border-bottom-width: var(--border-width);
+  border-left-width: var(--border-width);
+}
+
+&:nth-child(9n-5),
+&:nth-child(9n-2) {
   border-left-width: var(--border-edge-width);
 }
 
-&:nth-child(3n) {
-  border-right-width: var(--border-edge-width);
+&:nth-child(9n) {
+  border-right-width: var(--border-width);
 }
 
-&:nth-child(n):nth-child(-n + 9) {
-  border-top-width: var(--border-edge-width);
+&:nth-child(n):nth-child(-n+9) {
+  border-top-width: var(--border-width);
 }
 
-&:nth-child(n + 19):nth-child(-n + 27), 
-&:nth-child(n + 46):nth-child(-n + 54),
-&:nth-child(n + 73):nth-child(-n + 81) {
+&:nth-child(n + 19):nth-child(-n + 27),
+&:nth-child(n + 46):nth-child(-n + 54) {
   border-bottom-width: var(--border-edge-width);
 }

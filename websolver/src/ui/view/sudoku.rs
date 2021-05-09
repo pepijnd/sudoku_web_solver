@@ -45,6 +45,7 @@ impl Sudoku {
     <div class="sdk-cell">
         <div class="background" />
         <Indicator we_field="indicator" we_element />
+        <Cage we_field="cage" we_element />
         <Options we_field="options" we_element />
         <div class="sdk-number" we_field="number" />
     </div>
@@ -127,6 +128,19 @@ impl CellBox {
 )]
 #[derive(Debug, Clone, WebElement)]
 pub struct Indicator {
+    cell: Cell,
+}
+
+#[we_builder(
+    <div class="cell-cage">
+        <div class="cage top" />
+        <div class="cage left" />
+        <div class="cage right" />
+        <div class="cage bottom" />
+    </div>
+)]
+#[derive(Debug, Clone, WebElement)]
+pub struct Cage {
     cell: Cell,
 }
 
