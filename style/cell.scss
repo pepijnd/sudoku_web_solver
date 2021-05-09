@@ -7,11 +7,8 @@
 .sdk-cell {
   position: relative;
   font-weight: Bold;
-  font-size: 250%;
+  font-size: 2.5em;
   pointer-events: auto;
-  border: var(--border-color) var(--border-width) solid;
-  margin: calc(-1 * var(--border-width));
-  border-collapse: collapse;
   @import "./borders.scss";
 
   & > * {
@@ -49,7 +46,7 @@
 
   @media only screen and (max-width: 550px) and (min-width: 450px) {
     & {
-      font-size: 200%;
+      font-size: 2em;
       .sdk-number {
         padding-top: 12.5%;
       }
@@ -58,7 +55,7 @@
 
   @media only screen and (max-width: 450px) and (min-width: 350px) {
     & {
-      font-size: 175%;
+      font-size: 1.75em;
       .sdk-number {
         padding-top: 15%;
       }
@@ -67,7 +64,7 @@
 
   @media only screen and (max-width: 350px) {
     & {
-      font-size: 125%;
+      font-size: 1.25em;
       .sdk-number {
         padding-top: 17.5%;
       }
@@ -78,7 +75,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    padding: 5%;
+    padding: calc(1.5 * var(--indicator-size));
     font-size: small;
 
     .cell-option {
@@ -129,4 +126,36 @@
   &.source .indicator {
     background-color: var(--source-color);
   }
+
+  .cell-cage {
+    display: none;
+    margin: auto;
+  .cage {
+    @include fill;
+    &.top {
+      margin-top: 5px;
+      bottom: auto;
+      height: 2px;
+      background: repeating-linear-gradient(to right, white 0, white 5px, transparent 5px, transparent 7px);
+    }
+    &.left {
+      margin-left: 5px;
+      right: auto;
+      width: 2px;
+      background: repeating-linear-gradient(to bottom, white 0, white 5px, transparent 5px, transparent 7px);
+    }
+    &.right {
+      left: auto;
+      margin-right: 5px;
+      width: 2px;
+      background: repeating-linear-gradient(to bottom, white 0, white 5px, transparent 5px, transparent 7px);
+    }
+    &.bottom {
+      top: auto;
+      margin-bottom: 5px;
+      height: 2px;
+      background: repeating-linear-gradient(to right, white 0, white 5px, transparent 5px, transparent 7px);
+    }
+  }
+}
 }
