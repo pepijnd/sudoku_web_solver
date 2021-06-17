@@ -36,7 +36,21 @@ impl Sudoku {
     pub fn update(&self, sudoku: &SudokuController) -> Result<()> {
         for cell in self.cells.iter() {
             cell.update(sudoku);
+            cell.set_bubble(None);
         }
+
+        let model = sudoku.state.borrow();
+        'cage: for (i, t) in model.rules.cages.cages.iter().enumerate() {
+            for (c, n) in model.rules.cages.cells.iter().enumerate() {
+                if i + 1 == *n as usize {
+                    if let Some(cell) = self.cells.get(c) {
+                        cell.set_bubble(Some(&format!("{}", t)));
+                        continue 'cage;
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 }
@@ -47,6 +61,7 @@ impl Sudoku {
         <Indicator we_field="indicator" we_element />
         <Cage we_field="cage" we_element />
         <Options we_field="options" we_element />
+        <Bubble we_field="bubble" we_element />
         <div class="sdk-number" we_field="number" />
     </div>
 )]
@@ -62,8 +77,13 @@ impl CellBox {
 
     pub fn set_cell(&mut self, cell: Cell) {
         self.cell = cell;
+        self.cage.cell = cell;
         self.options.cell = cell;
         self.indicator.cell = cell;
+    }
+
+    pub fn set_bubble(&self, content: Option<&str>) {
+        self.bubble.set_content(content);
     }
 
     pub fn update(&self, sudoku: &SudokuController) {
@@ -114,6 +134,7 @@ impl CellBox {
             }
         }
 
+        self.cage.update(sudoku);
         self.options.update(sudoku);
     }
 }
@@ -133,15 +154,45 @@ pub struct Indicator {
 
 #[we_builder(
     <div class="cell-cage">
-        <div class="cage top" />
-        <div class="cage left" />
-        <div class="cage right" />
-        <div class="cage bottom" />
+        <div class="cage top hidden" we_field="top" />
+        <div class="cage left hidden" we_field="left" />
+        <div class="cage right hidden" we_field="right" />
+        <div class="cage bottom hidden" we_field="bottom"/>
     </div>
 )]
 #[derive(Debug, Clone, WebElement)]
 pub struct Cage {
     cell: Cell,
+}
+
+impl Cage {
+    fn update(&self, sudoku: &SudokuController) {
+        let state = sudoku.state.borrow();
+        let cages = &state.rules.cages.cells;
+        let id = cages[self.cell.index()];
+
+        self.top.add_class("hidden");
+        self.left.add_class("hidden");
+        self.right.add_class("hidden");
+        self.bottom.add_class("hidden");
+
+        if id == 0 {
+            return;
+        }
+
+        if self.cell.row == 0 || cages[Cell::new(self.cell.row - 1, self.cell.col).index()] != id {
+            self.top.remove_class("hidden");
+        }
+        if self.cell.row == 8 || cages[Cell::new(self.cell.row + 1, self.cell.col).index()] != id {
+            self.bottom.remove_class("hidden");
+        }
+        if self.cell.col == 0 || cages[Cell::new(self.cell.row, self.cell.col - 1).index()] != id {
+            self.left.remove_class("hidden");
+        }
+        if self.cell.col == 8 || cages[Cell::new(self.cell.row, self.cell.col + 1).index()] != id {
+            self.right.remove_class("hidden");
+        }
+    }
 }
 
 #[we_builder(
@@ -188,6 +239,27 @@ impl Options {
                     }
                 }
             }
+        }
+    }
+}
+
+#[we_builder(
+    <div class="bubble">
+        <div class="bubble-bg">
+            <div class="bubble-content" we_field="content" />
+        </div>
+    </div>
+)]
+#[derive(Debug, Clone, WebElement)]
+pub struct Bubble {}
+
+impl Bubble {
+    pub fn set_content(&self, content: Option<&str>) {
+        if let Some(content) = content {
+            self.content.set_text(content);
+            self.remove_class("hidden");
+        } else {
+            self.add_class("hidden");
         }
     }
 }

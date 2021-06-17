@@ -27,14 +27,36 @@ impl App {
     }
 
     pub fn start(&self) -> Result<(), JsValue> {
-        self.controller
-            .sudoku
-            .state
-            .borrow_mut()
-            .set_start(Sudoku::from(
-                // "...6..8....35.4...65..217...6..............5..7138..2...7.1.6.4.1.......9....3..7",
-                "....3.76.5....91.29.........49..53.......327...52..........75.4..1.4.....6.......",
-            ));
+        let mut sudoku = Sudoku::from(
+            // "...6..8....35.4...65..217...6..............5..7138..2...7.1.6.4.1.......9....3..7",
+            "....3.76.5....91.29.........49..53.......327...52..........75.4..1.4.....6.......",
+        );
+
+        let mut cages = solver::rules::Cages::default();
+        cages.cells[14] = 1;
+        cages.cells[23] = 1;
+        cages.cells[24] = 1;
+        cages.cells[25] = 1;
+        cages.cages.push(26);
+
+
+        cages.cells[47] = 2;
+        cages.cells[48] = 2;
+        cages.cells[56] = 2;
+        cages.cells[57] = 2;
+        cages.cages.push(17);
+
+
+        cages.cells[42] = 3;
+        cages.cells[43] = 3;
+        cages.cages.push(9);
+
+        {
+            let mut state = self.controller.sudoku.state.borrow_mut();
+            state.set_start(sudoku);
+            state.rules.cages = cages;
+        }
+
         self.controller
             .info
             .info

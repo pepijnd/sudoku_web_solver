@@ -1,9 +1,10 @@
-use solver::{Cell, Sudoku};
+use solver::{rules::Rules, Cell, Sudoku};
 
 #[derive(Debug)]
 pub struct SudokuStateModel {
     pub start: SudokuModel,
     pub state: Option<SudokuModel>,
+    pub rules: Rules,
     selected: Option<Cell>,
 }
 
@@ -54,6 +55,7 @@ impl Default for SudokuStateModel {
         Self {
             start: Default::default(),
             state: None,
+            rules: Rules::default(),
             selected: None,
         }
     }
