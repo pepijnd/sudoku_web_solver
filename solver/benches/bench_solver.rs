@@ -1,6 +1,6 @@
 #![feature(duration_constants)]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use solver::Sudoku;
+use solver::{Sudoku, solvers::CageSolver};
 
 static INPUT: &[(&str, &str)] = &[
     (
@@ -30,5 +30,25 @@ fn solver_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, solver_benchmark);
+fn sums_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Sums");
+
+    group.bench_function("sums", |b| {
+        b.iter(|| {
+            for s in 1..=9 {
+                for t in 1..=45 {
+                    black_box(CageSolver::sums(s, t));
+                }
+            }
+        })
+    });
+
+    group.finish();
+}
+
+criterion_group!{
+    name = benches;
+    config = Criterion::default();
+    targets = solver_benchmark, sums_benchmark
+}
 criterion_main!(benches);

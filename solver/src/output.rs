@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{sudoku::Buffer, Info, Options, Solver, StateMod, Sudoku};
+use crate::{Info, Options, Solver, StateMod, Sudoku, rules::Rules, sudoku::{Buffer}};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Solve {
+    pub meta: Rules,
     steps: Vec<SolveStep>,
 }
 
@@ -18,7 +19,7 @@ impl Solve {
             .expect("Solve always has at least one step")
     }
 
-    pub fn invalid(sudoku: Sudoku) -> Self {
+    pub fn invalid(sudoku: Sudoku, meta: Rules) -> Self {
         let cache = Options::default();
         Self {
             steps: vec![SolveStep {
@@ -32,12 +33,14 @@ impl Solve {
                 correct: true,
                 valid: false,
             }],
+            meta,
         }
     }
 }
 
 impl From<Buffer> for Solve {
     fn from(buffer: Buffer) -> Self {
+        let meta = buffer.rules.clone();
         Self {
             steps: buffer
                 .into_inner()
@@ -76,6 +79,7 @@ impl From<Buffer> for Solve {
                 })
                 .flatten()
                 .collect(),
+            meta,
         }
     }
 }

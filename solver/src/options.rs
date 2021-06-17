@@ -4,7 +4,7 @@ use crate::{output::ser_array::a81, Cell, Sudoku};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord ,serde::Serialize, serde::Deserialize)]
 pub struct CellOptions(u16);
 
 impl CellOptions {
@@ -56,6 +56,17 @@ impl CellOptions {
         for i in 1..=9 {
             if self.has(i) {
                 c += 1;
+            }
+        }
+        c
+    }
+
+    #[inline]
+    pub fn sum(&self) -> usize {
+        let mut c = 0;
+        for i in 1..=9 {
+            if self.has(i) {
+                c += i as usize;
             }
         }
         c

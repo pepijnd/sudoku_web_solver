@@ -13,6 +13,7 @@ pub use self::{
     single::SingleSolver,
     xwing::XWingSolver,
     xywing::XYWingSolver,
+    cage::CageSolver,
 };
 
 mod base;
@@ -21,12 +22,14 @@ mod sets;
 mod single;
 mod xwing;
 mod xywing;
+mod cage;
 
 #[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Solver {
     Init,
     BackTrace,
     Base,
+    Cage,
     Single,
     Elim,
     Set,
@@ -48,6 +51,7 @@ impl Solver {
             Solver::Init => Box::new(StateInit::default()),
             Solver::BackTrace => Box::new(Backtrace::default()),
             Solver::Base => Box::new(BaseSolver::default()),
+            Solver::Cage => Box::new(CageSolver::default()),
             Solver::Single => Box::new(SingleSolver::default()),
             Solver::Elim => Box::new(ElimSolver::default()),
             Solver::Set => Box::new(SetSolver::default()),

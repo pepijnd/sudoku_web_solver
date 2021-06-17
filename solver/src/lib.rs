@@ -3,10 +3,12 @@ pub mod output;
 pub mod solvers;
 pub mod sudoku;
 pub mod util;
+pub mod rules;
 
 use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
+use rules::Rules;
 use util::Domain;
 
 #[doc(inline)]
@@ -280,6 +282,7 @@ pub struct Config {
     pub base: Solver,
     pub solvers: Vec<Solver>,
     pub fallback: Option<Solver>,
+    pub rules: Rules,
 }
 
 impl Default for Config {
@@ -294,6 +297,7 @@ impl Default for Config {
                 Solver::XYWing,
             ],
             fallback: Some(Solver::BackTrace),
+            rules: Rules::default(),
         }
     }
 }

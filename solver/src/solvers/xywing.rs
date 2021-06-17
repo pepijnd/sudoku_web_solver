@@ -38,7 +38,7 @@ impl XYWingSolver {
             if matching != cell
                 && *state.sudoku.cell(matching) == 0
                 && c_opts != m_opts
-                && matches.iter().find(|&(_, m)| *m == matching).is_none()
+                && !matches.iter().any(|(_, m)| *m == matching)
             {
                 if let Some(m_pair) = m_opts.as_pair() {
                     if let Some(common) = c_pair.common(m_pair) {

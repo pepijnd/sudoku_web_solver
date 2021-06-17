@@ -2,11 +2,7 @@
 
 use std::rc::Rc;
 
-use crate::{
-    output::{ser_array::a81, Solve},
-    util::Domain,
-    Cell, Config, Entry, Info, Options, Solver,
-};
+use crate::{Cell, Config, Entry, Info, Options, Solver, output::{ser_array::a81, Solve}, rules::Rules, util::Domain};
 
 use serde::{Deserialize, Serialize};
 
@@ -84,7 +80,7 @@ impl Sudoku {
                     } else if let Some(last) = last_known {
                         return Solve::from(last);
                     } else {
-                        return Solve::invalid(*self);
+                        return Solve::invalid(*self, buffer.rules.clone());
                     }
                 }
             }
@@ -251,14 +247,19 @@ impl<'a> Iterator for SudokuIter<'a> {
 #[derive(Debug, Clone)]
 pub struct Buffer {
     buffer: Vec<Entry>,
+    pub rules: Rules,
 }
 
 impl Buffer {
     pub fn new(sudoku: Sudoku, config: Rc<Config>) -> Self {
         let mut buffer = Vec::with_capacity(32);
+        let rules = config.rules.clone();
         let state = Entry::new(sudoku, Options::default(), Solver::Init, config);
         buffer.push(state);
-        Self { buffer }
+        Self {
+            buffer,
+            rules,
+        }
     }
 
     pub fn get(&mut self) -> Option<&mut Entry> {
