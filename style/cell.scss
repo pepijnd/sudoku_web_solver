@@ -128,7 +128,6 @@
   }
 
   .cell-cage {
-    display: none;
     margin: auto;
   .cage {
     @include fill;
@@ -136,26 +135,43 @@
       margin-top: 5px;
       bottom: auto;
       height: 2px;
-      background: repeating-linear-gradient(to right, white 0, white 5px, transparent 5px, transparent 7px);
+      background: repeating-linear-gradient(to right, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
     }
     &.left {
       margin-left: 5px;
       right: auto;
       width: 2px;
-      background: repeating-linear-gradient(to bottom, white 0, white 5px, transparent 5px, transparent 7px);
+      background: repeating-linear-gradient(to bottom, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
     }
     &.right {
       left: auto;
       margin-right: 5px;
       width: 2px;
-      background: repeating-linear-gradient(to bottom, white 0, white 5px, transparent 5px, transparent 7px);
+      background: repeating-linear-gradient(to bottom, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
     }
     &.bottom {
       top: auto;
       margin-bottom: 5px;
       height: 2px;
-      background: repeating-linear-gradient(to right, white 0, white 5px, transparent 5px, transparent 7px);
+      background: repeating-linear-gradient(to right, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
     }
   }
 }
+  .bubble {
+    @include fill;
+    .bubble-bg {
+      width: 33%;
+      height: 25%;
+      margin-left: 3%;
+      margin-top: 3%;
+      background-color: var(--bubble-bg);
+      color: var(--bubble-text);
+      border-radius: 25%;
+      .bubble-content {
+        padding-top: 5%;
+        text-align: center;
+        font-size: 33%;
+      }
+    }
+  }
 }
