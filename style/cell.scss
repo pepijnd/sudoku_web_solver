@@ -130,31 +130,37 @@
   .cell-cage {
     margin: auto;
   .cage {
+    margin: 5%;
     @include fill;
     &.top {
-      margin-top: 5px;
-      bottom: auto;
-      height: 2px;
-      background: repeating-linear-gradient(to right, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
+      border-top: 2px var(--cage-color) dashed;
     }
     &.left {
-      margin-left: 5px;
-      right: auto;
-      width: 2px;
-      background: repeating-linear-gradient(to bottom, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
+      border-left: 2px var(--cage-color) dashed;
     }
     &.right {
-      left: auto;
-      margin-right: 5px;
-      width: 2px;
-      background: repeating-linear-gradient(to bottom, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
+      border-right: 2px var(--cage-color) dashed;
     }
     &.bottom {
-      top: auto;
-      margin-bottom: 5px;
-      height: 2px;
-      background: repeating-linear-gradient(to right, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
+      border-bottom: 2px var(--cage-color) dashed;
     }
+
+    // &.top-left {
+    //   bottom: auto;
+    //   right: auto;
+    //   height: 7px;
+    //   width: 7px;
+    //   background: repeating-linear-gradient(to bottom right, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
+    // }
+    // &.top-right {
+      
+    // }
+    // &.bottom-left {
+      
+    // }
+    // &.bottom-right {
+      
+    // }
   }
 }
   .bubble {

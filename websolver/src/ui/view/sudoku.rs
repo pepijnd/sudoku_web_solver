@@ -154,10 +154,7 @@ pub struct Indicator {
 
 #[we_builder(
     <div class="cell-cage">
-        <div class="cage top hidden" we_field="top" />
-        <div class="cage left hidden" we_field="left" />
-        <div class="cage right hidden" we_field="right" />
-        <div class="cage bottom hidden" we_field="bottom"/>
+        <div class="cage" we_field="cage" />
     </div>
 )]
 #[derive(Debug, Clone, WebElement)]
@@ -171,26 +168,23 @@ impl Cage {
         let cages = &state.rules.cages.cells;
         let id = cages[self.cell.index()];
 
-        self.top.add_class("hidden");
-        self.left.add_class("hidden");
-        self.right.add_class("hidden");
-        self.bottom.add_class("hidden");
+        self.cage.remove_class("top left right bottom");
 
         if id == 0 {
             return;
         }
 
         if self.cell.row == 0 || cages[Cell::new(self.cell.row - 1, self.cell.col).index()] != id {
-            self.top.remove_class("hidden");
+            self.cage.add_class("top");
         }
         if self.cell.row == 8 || cages[Cell::new(self.cell.row + 1, self.cell.col).index()] != id {
-            self.bottom.remove_class("hidden");
+            self.cage.add_class("bottom");
         }
         if self.cell.col == 0 || cages[Cell::new(self.cell.row, self.cell.col - 1).index()] != id {
-            self.left.remove_class("hidden");
+            self.cage.add_class("left");
         }
         if self.cell.col == 8 || cages[Cell::new(self.cell.row, self.cell.col + 1).index()] != id {
-            self.right.remove_class("hidden");
+            self.cage.add_class("right");
         }
     }
 }
