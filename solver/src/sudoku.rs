@@ -2,7 +2,12 @@
 
 use std::rc::Rc;
 
-use crate::{Cell, Config, Entry, Info, Options, Solver, output::{ser_array::a81, Solve}, rules::Rules, util::Domain};
+use crate::{
+    output::{ser_array::a81, Solve},
+    rules::Rules,
+    util::Domain,
+    Cell, Config, Entry, Info, Options, Solver,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -256,10 +261,7 @@ impl Buffer {
         let rules = config.rules.clone();
         let state = Entry::new(sudoku, Options::default(), Solver::Init, config);
         buffer.push(state);
-        Self {
-            buffer,
-            rules,
-        }
+        Self { buffer, rules }
     }
 
     pub fn get(&mut self) -> Option<&mut Entry> {

@@ -1,14 +1,14 @@
 pub mod options;
 pub mod output;
+pub mod rules;
 pub mod solvers;
 pub mod sudoku;
 pub mod util;
-pub mod rules;
 
 use std::rc::Rc;
 
-use serde::{Deserialize, Serialize};
 use rules::Rules;
+use serde::{Deserialize, Serialize};
 use util::Domain;
 
 #[doc(inline)]

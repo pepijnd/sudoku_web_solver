@@ -1,4 +1,3 @@
-use crate::Cell;
 use crate::output::ser_array::a81;
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +18,7 @@ impl Default for Rules {
 pub struct Cages {
     pub cages: Vec<u32>,
     #[serde(with = "a81")]
-    pub cells: [u32; 81]
+    pub cells: [u32; 81],
 }
 
 impl Default for Cages {

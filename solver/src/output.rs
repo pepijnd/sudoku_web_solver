@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{Info, Options, Solver, StateMod, Sudoku, rules::Rules, sudoku::{Buffer}};
+use crate::{rules::Rules, sudoku::Buffer, Info, Options, Solver, StateMod, Sudoku};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Solve {

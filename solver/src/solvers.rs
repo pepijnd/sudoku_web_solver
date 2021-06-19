@@ -8,21 +8,21 @@ use serde::{Deserialize, Serialize};
 pub use self::{
     base::StateSolved,
     base::{Backtrace, BaseSolver, StateInit},
+    cage::CageSolver,
     elim::ElimSolver,
     sets::SetSolver,
     single::SingleSolver,
     xwing::XWingSolver,
     xywing::XYWingSolver,
-    cage::CageSolver,
 };
 
 mod base;
+mod cage;
 mod elim;
 mod sets;
 mod single;
 mod xwing;
 mod xywing;
-mod cage;
 
 #[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Solver {

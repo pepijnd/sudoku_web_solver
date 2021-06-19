@@ -4,7 +4,7 @@ use crate::{output::ser_array::a81, Cell, Sudoku};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord ,serde::Serialize, serde::Deserialize)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, serde::Serialize, serde::Deserialize)]
 pub struct CellOptions(u16);
 
 impl CellOptions {
@@ -14,7 +14,7 @@ impl CellOptions {
 
     #[inline(always)]
     pub fn add(&mut self, i: u8) {
-        assert!(i <= 9);
+        assert!(i <= 9, "{} !<= 9", i);
         self.0 |= 0x1 << i
     }
 
@@ -100,12 +100,7 @@ impl CellOptions {
 
     #[inline]
     pub fn is_set(&self, other: &Self) -> bool {
-        for i in 1..=9 {
-            if other.has(i) && !self.has(i) {
-                return false;
-            }
-        }
-        true
+        self.0 & other.0 == other.0
     }
 
     #[inline]
@@ -313,6 +308,22 @@ mod test {
         options.remove(7);
         options.remove(9);
         assert_eq!(options.iter().collect::<Vec<u8>>(), vec![1, 3, 4, 6, 8]);
+    }
+
+    #[test]
+    fn options_set() {
+        let mut superset = CellOptions::default();
+        superset.add(1);
+        superset.add(3);
+        superset.add(6);
+        superset.add(8);
+        let mut subset = CellOptions::default();
+        subset.add(1);
+        subset.add(3);
+        subset.add(6);
+        assert!(superset.is_set(&subset));
+        subset.add(7);
+        assert!(!superset.is_set(&subset));
     }
 
     static SAMPLE: &str =
