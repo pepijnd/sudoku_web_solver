@@ -10,8 +10,8 @@ import("../pkg").then((lib) => {
   let app = new lib.App();
   worker.onmessage = function (e) {
     if (e.data[0] == "init") {
-      function solve(sudoku) {
-        worker.postMessage([sudoku]);
+      function solve(sudoku, rules) {
+        worker.postMessage([sudoku, rules]);
       }
       app.set_solver(solve);
       app.start();

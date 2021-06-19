@@ -4,7 +4,7 @@ use crate::{Info, Options, Solver, StateMod, Sudoku, rules::Rules, sudoku::{Buff
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Solve {
-    pub meta: Rules,
+    pub rules: Rules,
     steps: Vec<SolveStep>,
 }
 
@@ -19,7 +19,7 @@ impl Solve {
             .expect("Solve always has at least one step")
     }
 
-    pub fn invalid(sudoku: Sudoku, meta: Rules) -> Self {
+    pub fn invalid(sudoku: Sudoku, rules: Rules) -> Self {
         let cache = Options::default();
         Self {
             steps: vec![SolveStep {
@@ -33,14 +33,14 @@ impl Solve {
                 correct: true,
                 valid: false,
             }],
-            meta,
+            rules,
         }
     }
 }
 
 impl From<Buffer> for Solve {
     fn from(buffer: Buffer) -> Self {
-        let meta = buffer.rules.clone();
+        let rules = buffer.rules.clone();
         Self {
             steps: buffer
                 .into_inner()
@@ -79,7 +79,7 @@ impl From<Buffer> for Solve {
                 })
                 .flatten()
                 .collect(),
-            meta,
+            rules,
         }
     }
 }

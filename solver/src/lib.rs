@@ -160,6 +160,7 @@ impl From<Cell> for CellMod {
 pub enum ModMarking {
     Domain(Domain),
     Cell(Cell),
+    Cage(u32),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -329,6 +330,10 @@ impl State {
 
     pub fn merge_info(&mut self, other: &Self) {
         self.info.merge(&other.info);
+    }
+
+    pub fn options(&mut self, cell: Cell) -> CellOptions {
+        self.options.options(cell, &self.sudoku)
     }
 }
 

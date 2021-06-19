@@ -23,7 +23,7 @@ fn solver_benchmark(c: &mut Criterion) {
     for (i, (input, _)) in INPUT.iter().enumerate() {
         group.bench_with_input(format!("sudoku_{:?}", i), input, |b, i| {
             let s = Sudoku::from(*i);
-            b.iter(|| black_box(&s.clone()).solve())
+            b.iter(|| black_box(&s.clone()).solve(None))
         });
     }
 

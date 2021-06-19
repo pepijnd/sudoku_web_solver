@@ -62,11 +62,11 @@ impl CellOptions {
     }
 
     #[inline]
-    pub fn sum(&self) -> usize {
+    pub fn sum(&self) -> u32 {
         let mut c = 0;
         for i in 1..=9 {
             if self.has(i) {
-                c += i as usize;
+                c += i as u32;
             }
         }
         c

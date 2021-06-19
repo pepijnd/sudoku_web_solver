@@ -7,6 +7,7 @@ mod util;
 #[cfg(feature = "worker")]
 use solver::Sudoku;
 
+use solver::{Config, rules::Rules};
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
@@ -30,10 +31,18 @@ pub fn run() -> Result<(), JsValue> {
 
 #[cfg(feature = "worker")]
 #[wasm_bindgen]
-pub fn solve(sudoku: &JsValue) -> Result<JsValue, JsValue> {
-    let s: Sudoku = sudoku
+pub fn solve(sudoku: &JsValue, rules: &JsValue) -> Result<JsValue, JsValue> {
+    let sudoku: Sudoku = sudoku
         .into_serde()
         .map_err(|e| JsValue::from_str(&format!("{}", e)))?;
-    let solve = s.solve_steps();
+
+    let rules: Rules = rules
+        .into_serde()
+        .map_err(|e| JsValue::from_str(&format!("{}", e)))?;
+    let mut config = Config {
+        rules, ..Default::default()
+    };
+    config.add_rules_solvers();
+    let solve = sudoku.solve_steps(Some(config));
     JsValue::from_serde(&solve).map_err(|e| JsValue::from_str(&format!("{}", e)))
 }

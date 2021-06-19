@@ -14,8 +14,8 @@ pub struct Sudoku {
 }
 
 impl Sudoku {
-    pub fn solve(&self) -> Solution {
-        let config = Config::default();
+    pub fn solve(&self, config: Option<Config>) -> Solution {
+        let config = config.unwrap_or_default();
 
         let mut buffer = Buffer::new(*self, Rc::new(config));
         loop {
@@ -52,8 +52,8 @@ impl Sudoku {
         }
     }
 
-    pub fn solve_steps(&self) -> Solve {
-        let config = Config::default();
+    pub fn solve_steps(&self, config: Option<Config>) -> Solve {
+        let config = config.unwrap_or_default();
 
         let mut buffer = Buffer::new(*self, Rc::new(config));
         loop {
@@ -87,9 +87,9 @@ impl Sudoku {
         }
     }
 
-    pub fn solve_all(&self) -> Vec<Sudoku> {
+    pub fn solve_all(&self, config: Option<Config>) -> Vec<Sudoku> {
         let mut solutions = Vec::new();
-        let config = Config::default();
+        let config = config.unwrap_or_default();
 
         let mut buffer = Buffer::new(*self, Rc::new(config));
         loop {
@@ -296,7 +296,7 @@ mod test {
         let sudoku = Sudoku::from(
             "....27....1...4.....9..57...8....3..5..9..1......32...6.1....4...8....9.....4.6.5",
         );
-        let solutions = sudoku.solve_all();
+        let solutions = sudoku.solve_all(None);
         assert_eq!(solutions.len(), 235);
     }
 }
