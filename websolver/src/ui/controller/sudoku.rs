@@ -98,7 +98,11 @@ impl SudokuController {
         if let Some(solver) = self.solver.borrow().as_ref() {
             let this = JsValue::null();
             solver
-                .call2(&this, &JsValue::from_serde(start.get()).unwrap(), &JsValue::from_serde(&model.rules).unwrap())
+                .call2(
+                    &this,
+                    &JsValue::from_serde(start.get()).unwrap(),
+                    &JsValue::from_serde(&model.rules).unwrap(),
+                )
                 .unwrap();
         }
     }

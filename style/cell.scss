@@ -5,21 +5,22 @@
 }
 
 .sdk-cell {
+  @import "./borders.scss";
   position: relative;
-  font-weight: Bold;
+  font-weight: bold;
   font-size: 2.5em;
   pointer-events: auto;
-  @import "./borders.scss";
 
   & > * {
-    pointer-events: none;
     @include fill;
+    pointer-events: none;
   }
 
   @media (hover: hover) and (pointer: fine) {
     &:hover .background {
       background-color: var(--highlight-color);
     }
+
     &.selected:hover .background {
       background-color: var(--highlight-indicate-color);
     }
@@ -47,6 +48,7 @@
   @media only screen and (max-width: 550px) and (min-width: 450px) {
     & {
       font-size: 2em;
+
       .sdk-number {
         padding-top: 12.5%;
       }
@@ -56,6 +58,7 @@
   @media only screen and (max-width: 450px) and (min-width: 350px) {
     & {
       font-size: 1.75em;
+
       .sdk-number {
         padding-top: 15%;
       }
@@ -65,6 +68,7 @@
   @media only screen and (max-width: 350px) {
     & {
       font-size: 1.25em;
+
       .sdk-number {
         padding-top: 17.5%;
       }
@@ -86,9 +90,11 @@
       &.digit {
         color: var(--indication-color);
       }
+
       &.target {
         color: var(--target-color);
       }
+
       &.source {
         color: var(--source-color);
       }
@@ -97,23 +103,29 @@
 
   .cell-indicator .indicator {
     @include fill;
+
     &.left,
     &.right {
       width: var(--indicator-size);
     }
+
     &.top,
     &.bottom {
       height: var(--indicator-size);
     }
+
     &.top {
       bottom: auto;
     }
+
     &.left {
       right: auto;
     }
+
     &.right {
       left: auto;
     }
+
     &.bottom {
       top: auto;
     }
@@ -129,42 +141,32 @@
 
   .cell-cage {
     margin: auto;
-  .cage {
-    margin: 5%;
-    @include fill;
-    &.top {
-      border-top: 2px var(--cage-color) dashed;
-    }
-    &.left {
-      border-left: 2px var(--cage-color) dashed;
-    }
-    &.right {
-      border-right: 2px var(--cage-color) dashed;
-    }
-    &.bottom {
-      border-bottom: 2px var(--cage-color) dashed;
-    }
 
-    // &.top-left {
-    //   bottom: auto;
-    //   right: auto;
-    //   height: 7px;
-    //   width: 7px;
-    //   background: repeating-linear-gradient(to bottom right, var(--cage-color) 0, var(--cage-color) 5px, transparent 5px, transparent 7px);
-    // }
-    // &.top-right {
-      
-    // }
-    // &.bottom-left {
-      
-    // }
-    // &.bottom-right {
-      
-    // }
+    .cage {
+      margin: 5%;
+      @include fill;
+
+      &.top {
+        border-top: 2px var(--cage-color) dashed;
+      }
+
+      &.left {
+        border-left: 2px var(--cage-color) dashed;
+      }
+
+      &.right {
+        border-right: 2px var(--cage-color) dashed;
+      }
+
+      &.bottom {
+        border-bottom: 2px var(--cage-color) dashed;
+      }
+    }
   }
-}
+
   .bubble {
     @include fill;
+
     .bubble-bg {
       width: 33%;
       height: 25%;
@@ -173,6 +175,7 @@
       background-color: var(--bubble-bg);
       color: var(--bubble-text);
       border-radius: 25%;
+
       .bubble-content {
         padding-top: 5%;
         text-align: center;
