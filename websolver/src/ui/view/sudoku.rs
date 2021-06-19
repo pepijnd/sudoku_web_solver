@@ -83,6 +83,11 @@ impl CellBox {
     }
 
     pub fn set_bubble(&self, content: Option<&str>) {
+        if content.is_some() {
+            self.options.placeholder.remove_class("hidden");
+        } else {
+            self.options.placeholder.add_class("hidden");
+        }
         self.bubble.set_content(content);
     }
 
@@ -191,6 +196,7 @@ impl Cage {
 
 #[we_builder(
     <div class="cell-options">
+        <div class="cell-option hidden" we_field="placeholder" />
         <div class="cell-option" we_field="options" we_repeat="9" />
     </div>
 )]

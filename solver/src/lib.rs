@@ -302,6 +302,14 @@ impl Default for Config {
     }
 }
 
+impl Config {
+    pub fn add_rules_solvers(&mut self) {
+        if !self.rules.cages.cages.is_empty() {
+            self.solvers.insert(0, Solver::Cage)
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct State {
     pub sudoku: Sudoku,

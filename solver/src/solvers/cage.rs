@@ -7,12 +7,14 @@ pub struct CageSolver;
 
 impl EntrySolver for CageSolver {
     fn advance(&mut self, state: &mut State) -> bool {
-        false
+        true
     }
 }
 
 impl CageSolver {
-    fn test(domain: Domain, state: &mut State) {}
+    fn test(domain: Domain, state: &mut State) {
+
+    }
 
     pub fn sums(size: usize, total: usize) -> Vec<CellOptions> {
         let mut options: Vec<CellOptions> = (1..=9)
