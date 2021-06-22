@@ -47,7 +47,7 @@ impl SetSolver {
             }
             for value in options.iter() {
                 if state.remove(other, value) {
-                    mods.push_target(CellMod::option(cell, value));
+                    mods.push_target(CellMod::option(other, value));
                 }
             }
         }
@@ -75,7 +75,7 @@ impl SetSolver {
                     }
                     for value in options.iter() {
                         if state.remove(other, value) {
-                            mods.push_target(CellMod::option(cell, value));
+                            mods.push_target(CellMod::option(other, value));
                         }
                     }
                 }
@@ -88,7 +88,7 @@ impl SetSolver {
                     }
                     for value in options.iter() {
                         if state.remove(other, value) {
-                            mods.push_target(CellMod::option(cell, value));
+                            mods.push_target(CellMod::option(other, value));
                         }
                     }
                 }

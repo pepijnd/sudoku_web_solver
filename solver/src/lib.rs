@@ -5,7 +5,7 @@ pub mod solvers;
 pub mod sudoku;
 pub mod util;
 
-use std::rc::Rc;
+use std::{rc::Rc, time::UNIX_EPOCH};
 
 use rules::Rules;
 use serde::{Deserialize, Serialize};
@@ -56,6 +56,16 @@ impl Entry {
         state.info.reset();
 
         if self.info.solved {
+            for &tech in &state.config.solvers {
+                let mut test_state = state.clone();
+                test_state.info.tech = tech;
+                let mut entry = Entry::from_state(test_state);
+                if !entry.advance() {
+                    state.info.tech = Solver::Invalid;
+                    state.info.push_state();
+                    return Entry::from_state(state);
+                }
+            }
             state.info.tech = Solver::Solved;
             state.info.push_state();
             return Entry::from_state(state);
@@ -190,6 +200,10 @@ impl StateMod {
 
     pub fn has_targets(&self) -> bool {
         !self.target.is_empty()
+    }
+
+    pub fn targets(&self) -> impl Iterator<Item = &CellMod> {
+        self.target.iter()
     }
 
     pub fn push_mark(&mut self, mark: ModMarking) {
@@ -358,6 +372,11 @@ pub struct Info {
     pub guesses_t: u32,
     pub correct: bool,
     pub valid: bool,
+
+    pub progress: Vec<(u32, u32)>,
+    pub total: Option<u32>, 
+    pub prg_string: String,   
+    pub start: f64,
 }
 
 impl Info {
@@ -369,6 +388,7 @@ impl Info {
         self.mods = Vec::new();
         self.change = false;
         self.guesses = 0;
+        self.total = None;
     }
 
     pub fn push_mod(&mut self, m: StateMod) {
@@ -393,6 +413,11 @@ impl Default for Info {
             guesses_t: 0,
             correct: true,
             valid: true,
+
+            progress: Vec::new(),
+            total: None,
+            prg_string: String::new(),
+            start: std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64(),
         }
     }
 }

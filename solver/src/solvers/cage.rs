@@ -13,12 +13,14 @@ impl CageSolver {
     fn test(state: &mut State) -> bool {
         let cages = state.config.rules.cages.clone();
         let mut size_options = Vec::with_capacity(cages.cages.len());
+
         for (cage, &total) in cages.cages.iter().enumerate() {
             let mut unsolved = false;
             let mut size = 0;
             let cage = cage as u32 + 1;
             let mut options = CellOptions::default();
             let mut digits = CellOptions::default();
+            let mut sum = 0;
             for (index, &cell_cage) in cages.cells.iter().enumerate() {
                 if cell_cage != cage {
                     continue;
@@ -30,6 +32,7 @@ impl CageSolver {
                     unsolved = true;
                 } else {
                     digits.add(digit);
+                    sum += digit as u32;
                 }
                 size += 1;
             }
@@ -37,12 +40,13 @@ impl CageSolver {
                 return false;
             }
             if unsolved {
-                size_options.push((size, total, options, digits));
+                size_options.push((cage, size, total, options, digits));
+            } else if sum != total {
+                return false
             }
         }
-        for (cage, &(size, total, options, digits)) in size_options.iter().enumerate() {
+        for &(cage, size, total, options, digits) in &size_options{
             let mut mods = StateMod::from(state.info.tech);
-            let cage = cage as u32 + 1;
             let mut sums = Self::sums(size, total);
             sums.retain(|sum| options.is_set(sum) && sum.is_set(&digits));
             if let Some(options) = sums.iter_mut().reduce(|a, b| {
@@ -54,10 +58,17 @@ impl CageSolver {
                         continue;
                     }
                     let cell = Cell::from_index(index);
+                    if *state.sudoku.cell(cell) != 0 {
+                        continue;
+                    }
                     let cell_options = state.options.options(cell, &state.sudoku);
+                    for digit in digits.iter() {
+                        if state.remove(cell, digit) {
+                            mods.push_target(CellMod::option(cell, digit))
+                        }
+                    }
                     for cell_option in cell_options.iter() {
-                        if !options.has(cell_option) {
-                            state.remove(cell, cell_option);
+                        if !options.has(cell_option) && state.remove(cell, cell_option) {
                             mods.push_target(CellMod::option(cell, cell_option))
                         }
                     }
@@ -120,7 +131,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let list = CageSolver::sums(1, 9);
+        let list = CageSolver::sums(5, 26);
         let l = list.len();
         for o in list {
             println!("{}: {:?}", o.sum(), o.iter().collect::<Vec<_>>());

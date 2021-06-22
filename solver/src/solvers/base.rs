@@ -1,3 +1,5 @@
+use std::{io::Write, time::UNIX_EPOCH};
+
 use crate::{Cell, CellMod, CellOptions, EntrySolver, State, StateMod};
 
 #[derive(Debug, Copy, Clone)]
@@ -55,6 +57,26 @@ impl Default for StateIncomplete {
 }
 
 #[derive(Debug, Copy, Clone)]
+pub struct StateInvalid;
+
+impl EntrySolver for StateInvalid {
+    fn advance(&mut self, state: &mut State) -> bool {
+        state.info.correct = false;
+        false
+    }
+
+    fn terminate(&self) -> bool {
+        false
+    }
+}
+
+impl Default for StateInvalid {
+    fn default() -> Self {
+        Self
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 pub struct BaseSolver;
 
 impl EntrySolver for BaseSolver {
@@ -101,17 +123,48 @@ pub struct Backtrace {
 impl EntrySolver for Backtrace {
     fn advance(&mut self, state: &mut State) -> bool {
         state.info.correct = false;
-        if let Some((cell, value)) = self.next(state) {
+        let advance = if let Some((cell, value, size)) = self.next(state) {
+            if state.info.total.is_none() {
+                state.info.total = Some(size);
+                state.info.progress.push((0, size));
+            } else {
+                state.info.progress.last_mut().unwrap().0 = state.info.guesses;
+            }
             state.info.guesses += 1;
             state.info.guesses_t += 1;
             let mut mods = StateMod::from(state.info.tech);
             mods.push_target(cell.into());
             state.info.push_mod(mods);
             state.update(cell, value);
+
             true
         } else {
+            // println!("{:?}", &state.info.progress);
+
             false
+        };
+
+        let mut chance = 0.0;
+        let mut part = 1;
+        for &(g, t) in &state.info.progress {
+            chance += (g as f64 / t as f64) / part as f64;
+            part *= t;
         }
+        let prg_display = format!("{:.4}", chance);
+        if prg_display != state.info.prg_string {
+            println!(
+                "{:.4},{}",
+                std::time::SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs_f64()
+                    - state.info.start,
+                prg_display
+            );
+            std::io::stdout().flush().expect("stdout flush");
+            state.info.prg_string = prg_display;
+        }
+        advance
     }
 
     fn verified(&self) -> bool {
@@ -120,35 +173,39 @@ impl EntrySolver for Backtrace {
 }
 
 impl Backtrace {
-    pub fn next(&mut self, state: &mut State) -> Option<(Cell, u8)> {
+    pub fn next(&mut self, state: &mut State) -> Option<(Cell, u8, u32)> {
         if let Some(cell) = self.cell {
+            let size = self.options.len();
             if let Some(value) = self.options.take() {
-                return Some((cell, value));
+                return Some((cell, value, size as u32));
             }
             None
         } else {
             let mut candidate: Option<(usize, Cell, CellOptions)> = None;
-            'lowest: for row in 0..9 {
+            for row in 0..9 {
                 for col in 0..9 {
                     let cell = Cell { row, col };
                     if *state.sudoku.cell(cell) != 0 {
                         continue;
                     };
                     let options = state.options.options(cell, &state.sudoku);
-                    let len = options.len();
-                    if candidate.is_none() || len < candidate.unwrap().0 {
-                        candidate.replace((len, Cell { row, col }, options));
-                        if len == 2 {
-                            break 'lowest;
-                        }
+                    let cell = Cell::new(row, col);
+                    let mut score = 10-options.len();
+                    if state.config.rules.cages.cells[cell.index()] != 0 {
+                        score *= 2;
+                    }
+                    if candidate.is_none() || score > candidate.unwrap().0 {
+                        candidate.replace((score, cell, options));
+                        
                     }
                 }
             }
             if let Some((_, cell, options)) = candidate {
                 self.cell = Some(cell);
                 self.options = options;
+                let size = self.options.len();
                 if let Some(option) = self.options.take() {
-                    return Some((cell, option));
+                    return Some((cell, option, size as u32));
                 }
             }
             None

@@ -1,5 +1,3 @@
-use base::StateIncomplete;
-
 use crate::EntrySolver;
 
 use serde::{Deserialize, Serialize};
@@ -7,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[doc(inline)]
 pub use self::{
     base::StateSolved,
-    base::{Backtrace, BaseSolver, StateInit},
+    base::{Backtrace, BaseSolver, StateIncomplete, StateInit, StateInvalid},
     cage::CageSolver,
     elim::ElimSolver,
     sets::SetSolver,
@@ -35,6 +33,7 @@ pub enum Solver {
     Set,
     XWing,
     XYWing,
+    Invalid,
     Incomplete,
     Solved,
 }
@@ -58,6 +57,7 @@ impl Solver {
             Solver::XWing => Box::new(XWingSolver::default()),
             Solver::XYWing => Box::new(XYWingSolver::default()),
             Solver::Incomplete => Box::new(StateIncomplete::default()),
+            Solver::Invalid => Box::new(StateInvalid::default()),
             Solver::Solved => Box::new(StateSolved::default()),
         }
     }
