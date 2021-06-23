@@ -417,7 +417,7 @@ impl Default for Info {
             progress: Vec::new(),
             total: None,
             prg_string: String::new(),
-            start: std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64(),
+            start: 0.0 //std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64(),
         }
     }
 }

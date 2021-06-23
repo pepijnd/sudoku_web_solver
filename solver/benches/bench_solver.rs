@@ -2,7 +2,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use solver::{
     rules::{Cages, Rules},
-    solvers::CageSolver,
     Config, Sudoku,
 };
 
@@ -36,16 +35,6 @@ fn solver_benchmark(c: &mut Criterion) {
 
 fn killer_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("Killer");
-
-    group.bench_function("sums", |b| {
-        b.iter(|| {
-            for s in 1..=9 {
-                for t in 1..=45 {
-                    black_box(CageSolver::sums(s, t));
-                }
-            }
-        })
-    });
 
     let sudoku = Sudoku::from(
         "8.1...9....927.....5....4.3.............5.....3............3......8...4..8.5.4...",

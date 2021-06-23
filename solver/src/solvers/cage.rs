@@ -9,113 +9,100 @@ impl EntrySolver for CageSolver {
     }
 }
 
+#[derive(Debug)]
+enum CellState {
+    Digit(u8),
+    Option(CellOptions),
+}
+
 impl CageSolver {
     fn test(state: &mut State) -> bool {
         let cages = state.config.rules.cages.clone();
-        let mut size_options = Vec::with_capacity(cages.cages.len());
 
         for (cage, &total) in cages.cages.iter().enumerate() {
-            let mut unsolved = false;
-            let mut size = 0;
-            let cage = cage as u32 + 1;
-            let mut options = CellOptions::default();
-            let mut digits = CellOptions::default();
-            let mut sum = 0;
+            let mut cage_cells = Vec::new();
             for (index, &cell_cage) in cages.cells.iter().enumerate() {
-                if cell_cage != cage {
+                if cell_cage != cage + 1 {
                     continue;
                 }
                 let cell = Cell::from_index(index);
-                options.combine(&state.options.options(cell, &state.sudoku));
-                let digit = *state.sudoku.cell(cell);
-                if digit == 0 {
-                    unsolved = true;
+                let value = *state.sudoku.cell(cell);
+                if value != 0 {
+                    cage_cells.push((cell, CellState::Digit(value)));
                 } else {
-                    digits.add(digit);
-                    sum += digit as u32;
+                    let options = state.options(cell);
+                    cage_cells.push((cell, CellState::Option(options)));
                 }
-                size += 1;
             }
-            if options.len() < size as usize {
-                return false;
+            let size = cage_cells.len();
+            let mut sums = (0..size).map(|i| (cage_cells[i].0, CellOptions::default())).collect::<Vec<_>>();
+            let mut buffer = (0..size).map(|_| (0, 0)).collect::<Vec<_>>();
+            let mut i = 0;
+            let mut valid = true;
+            let mut test = false;
+            loop {
+                let (_, state) = &cage_cells[i];
+                match state {
+                    CellState::Digit(digit) => {
+                        if valid && !buffer.iter().any(|(_, v)| *v == *digit as u32) {
+                            buffer[i].1 = *digit as u32;
+                        } else {
+                            buffer[i].1 = 0;
+                            valid = false;
+                        }
+                    }
+                    CellState::Option(options) => {
+                        if let Some(option) = options.iter().nth(buffer[i].0) {
+                            buffer[i].0 += 1;
+                            valid = true;
+                            if !buffer.iter().any(|(_, v)| *v == option as u32) {
+                                buffer[i].1 = option as u32;
+                            } else {
+                                buffer[i].1 = 0;
+                                i -= 1;
+                            }
+                        } else {
+                            buffer[i] = (0, 0);
+                            valid = false;
+                        }
+                    }
+                }
+                if valid {
+                    i += 1;
+                } else {
+                    if i == 0 {
+                        if !test {
+                            return false;
+                        }
+                        break
+                    }
+                    i -= 1;
+                }
+                if i == size && valid {
+                    let sum = buffer.iter().map(|(_, v)| *v).sum::<u32>();
+                    if sum == total {
+                        for ((_, options), (_, digit)) in sums.iter_mut().zip(buffer.iter()) {
+                            options.add(*digit as u8);
+                        }
+                        test = true;
+                    }
+                    i -= 1;
+                    valid = false;
+                }
             }
-            if unsolved {
-                size_options.push((cage, size, total, options, digits));
-            } else if sum != total {
-                return false
-            }
-        }
-        for &(cage, size, total, options, digits) in &size_options{
             let mut mods = StateMod::from(state.info.tech);
-            let mut sums = Self::sums(size, total);
-            sums.retain(|sum| options.is_set(sum) && sum.is_set(&digits));
-            if let Some(options) = sums.iter_mut().reduce(|a, b| {
-                a.combine(b);
-                a
-            }) {
-                for (index, &cell_cage) in cages.cells.iter().enumerate() {
-                    if cell_cage != cage {
-                        continue;
-                    }
-                    let cell = Cell::from_index(index);
-                    if *state.sudoku.cell(cell) != 0 {
-                        continue;
-                    }
-                    let cell_options = state.options.options(cell, &state.sudoku);
-                    for digit in digits.iter() {
-                        if state.remove(cell, digit) {
-                            mods.push_target(CellMod::option(cell, digit))
-                        }
-                    }
-                    for cell_option in cell_options.iter() {
-                        if !options.has(cell_option) && state.remove(cell, cell_option) {
-                            mods.push_target(CellMod::option(cell, cell_option))
-                        }
+            for &(cell, options) in &sums {
+                for i in 1..=9 {
+                    if !options.has(i) && state.remove(cell, i) {
+                        mods.push_target(CellMod::option(cell, i));
                     }
                 }
-            } else {
-                return false;
             }
             if mods.has_targets() {
                 state.info.push_mod(mods);
             }
         }
         true
-    }
-
-    pub fn sums(size: u32, total: u32) -> Vec<CellOptions> {
-        if size == 1 && total <= 9 {
-            let mut option = CellOptions::default();
-            option.add(total as u8);
-            return vec![option];
-        }
-        let mut options: Vec<CellOptions> = (1..=9)
-            .map(|x| {
-                let mut a = CellOptions::default();
-                a.add(x);
-                a
-            })
-            .collect();
-        for n in 1..size {
-            options = options
-                .iter()
-                .flat_map(move |&o| {
-                    (1..=9).filter_map(move |x| {
-                        let mut l = o;
-                        let sum = o.sum() + x;
-                        if l.has(x as u8) || sum > total || (size - 1 == n && sum != total) {
-                            None
-                        } else {
-                            l.add(x as u8);
-                            Some(l)
-                        }
-                    })
-                })
-                .collect();
-            options.sort_unstable();
-            options.dedup();
-        }
-        options
     }
 }
 
@@ -127,15 +114,42 @@ impl Default for CageSolver {
 
 #[cfg(test)]
 mod tests {
+    use std::rc::Rc;
+
+    use crate::{
+        rules::{Cages, Rules},
+        Config, EntrySolver, State, Sudoku,
+    };
+
     use super::CageSolver;
 
     #[test]
     fn test() {
-        let list = CageSolver::sums(5, 26);
-        let l = list.len();
-        for o in list {
-            println!("{}: {:?}", o.sum(), o.iter().collect::<Vec<_>>());
-        }
-        println!("len: {}", l);
+        let mut state = State {
+            sudoku: Sudoku::from(
+                ".....8...........................................................................",
+            ),
+            config: Rc::new({
+                let mut config = Config {
+                    rules: Rules {
+                        cages: Cages {
+                            cages: vec![20, 27, 26, 24, 28, 17, 18, 30, 16, 24],
+                            cells: [
+                                0, 0, 0, 0, 1, 2, 2, 2, 3, 0, 0, 0, 0, 1, 1, 1, 2, 3, 0, 0, 0, 0,
+                                4, 4, 5, 5, 3, 0, 0, 0, 0, 0, 4, 4, 5, 3, 6, 7, 8, 0, 0, 0, 4, 5,
+                                3, 6, 7, 8, 8, 0, 0, 0, 0, 0, 6, 7, 7, 8, 8, 0, 0, 0, 0, 6, 9, 10,
+                                10, 10, 0, 0, 0, 0, 6, 9, 9, 9, 10, 0, 0, 0, 0,
+                            ],
+                        },
+                    },
+                    ..Default::default()
+                };
+                config.add_rules_solvers();
+                config
+            }),
+            ..Default::default()
+        };
+        let mut solver = CageSolver {};
+        assert!(solver.advance(&mut state));
     }
 }
