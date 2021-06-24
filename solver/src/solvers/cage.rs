@@ -114,39 +114,32 @@ impl Default for CageSolver {
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
-
-    use crate::{
-        rules::{Cages, Rules},
-        Config, EntrySolver, State, Sudoku,
-    };
+    use crate::{Config, ConfigDescriptor, EntrySolver, State, Sudoku, rules::{Cages, Rules}};
 
     use super::CageSolver;
 
     #[test]
     fn test() {
+        let mut config = ConfigDescriptor{
+            rules: Rules {
+                cages: Cages {
+                    cages: vec![20, 27, 26, 24, 28, 17, 18, 30, 16, 24],
+                    cells: [
+                        0, 0, 0, 0, 1, 2, 2, 2, 3, 0, 0, 0, 0, 1, 1, 1, 2, 3, 0, 0, 0, 0,
+                        4, 4, 5, 5, 3, 0, 0, 0, 0, 0, 4, 4, 5, 3, 6, 7, 8, 0, 0, 0, 4, 5,
+                        3, 6, 7, 8, 8, 0, 0, 0, 0, 0, 6, 7, 7, 8, 8, 0, 0, 0, 0, 6, 9, 10,
+                        10, 10, 0, 0, 0, 0, 6, 9, 9, 9, 10, 0, 0, 0, 0,
+                    ],
+                },
+            },
+            ..Default::default()
+        };
+        config.add_rules_solvers();
         let mut state = State {
             sudoku: Sudoku::from(
                 ".....8...........................................................................",
             ),
-            config: Rc::new({
-                let mut config = Config {
-                    rules: Rules {
-                        cages: Cages {
-                            cages: vec![20, 27, 26, 24, 28, 17, 18, 30, 16, 24],
-                            cells: [
-                                0, 0, 0, 0, 1, 2, 2, 2, 3, 0, 0, 0, 0, 1, 1, 1, 2, 3, 0, 0, 0, 0,
-                                4, 4, 5, 5, 3, 0, 0, 0, 0, 0, 4, 4, 5, 3, 6, 7, 8, 0, 0, 0, 4, 5,
-                                3, 6, 7, 8, 8, 0, 0, 0, 0, 0, 6, 7, 7, 8, 8, 0, 0, 0, 0, 6, 9, 10,
-                                10, 10, 0, 0, 0, 0, 6, 9, 9, 9, 10, 0, 0, 0, 0,
-                            ],
-                        },
-                    },
-                    ..Default::default()
-                };
-                config.add_rules_solvers();
-                config
-            }),
+            config: Config::new(config),
             ..Default::default()
         };
         let mut solver = CageSolver {};

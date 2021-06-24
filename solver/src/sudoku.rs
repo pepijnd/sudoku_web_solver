@@ -22,7 +22,7 @@ impl Sudoku {
     pub fn solve(&self, config: Option<Config>) -> Solution {
         let config = config.unwrap_or_default();
 
-        let mut buffer = Buffer::new(*self, Rc::new(config));
+        let mut buffer = Buffer::new(*self, config);
         loop {
             let entry = buffer.get().unwrap();
             if entry.advance() {
@@ -60,7 +60,7 @@ impl Sudoku {
     pub fn solve_steps(&self, config: Option<Config>) -> Solve {
         let config = config.unwrap_or_default();
 
-        let mut buffer = Buffer::new(*self, Rc::new(config));
+        let mut buffer = Buffer::new(*self, config);
         loop {
             let entry = buffer.get().unwrap();
             if entry.advance() {
@@ -96,7 +96,7 @@ impl Sudoku {
         let mut solutions = Vec::new();
         let config = config.unwrap_or_default();
 
-        let mut buffer = Buffer::new(*self, Rc::new(config));
+        let mut buffer = Buffer::new(*self, config);
         loop {
             if solutions.len() >= 1000 {
                 return solutions;
@@ -256,7 +256,7 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn new(sudoku: Sudoku, config: Rc<Config>) -> Self {
+    pub fn new(sudoku: Sudoku, config: Config) -> Self {
         let mut buffer = Vec::with_capacity(32);
         let rules = config.rules.clone();
         let state = Entry::new(sudoku, Options::default(), Solver::Init, config);

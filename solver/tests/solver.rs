@@ -1,4 +1,4 @@
-use solver::{rules::Rules, solvers::Solver, sudoku::Solution, Config, Sudoku};
+use solver::{Config, ConfigDescriptor, Sudoku, rules::Rules, solvers::Solver, sudoku::Solution};
 
 static INPUT: &[(&str, &str)] = &[
     (
@@ -89,12 +89,12 @@ fn solver_cages() {
 
     let rules = Rules { cages };
 
-    let mut config = Config {
+    let mut config = ConfigDescriptor {
         rules,
         ..Default::default()
     };
     config.add_rules_solvers();
-    let solve = sudoku.solve_steps(Some(config));
+    let solve = sudoku.solve_steps(Some(Config::new(config)));
     assert!(solve.end().valid);
     assert_eq!(solve.end().solver, Solver::Solved);
 }

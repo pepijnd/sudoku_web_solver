@@ -5,7 +5,7 @@ pub mod solvers;
 pub mod sudoku;
 pub mod util;
 
-use std::{rc::Rc, time::UNIX_EPOCH};
+use std::{ops::Deref, rc::Rc, time::UNIX_EPOCH};
 
 use rules::Rules;
 use serde::{Deserialize, Serialize};
@@ -28,7 +28,7 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn new(sudoku: Sudoku, options: Options, tech: Solver, config: Rc<Config>) -> Self {
+    pub fn new(sudoku: Sudoku, options: Options, tech: Solver, config: Config) -> Self {
         Self {
             state: State {
                 sudoku,
@@ -292,15 +292,55 @@ impl ModTarget {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Config {
+    pub inner: Rc<ConfigDescriptor>,
+}
+
+impl Deref for Config {
+    type Target = ConfigDescriptor;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            inner: Rc::new(Default::default()),
+        }
+    }
+}
+
+impl Config {
+    pub fn new(desc: ConfigDescriptor) -> Config {
+        Config {
+            inner: Rc::new(desc),
+        }
+    }
+}
+
+pub struct ConfigDescriptor {
     pub base: Solver,
     pub solvers: Vec<Solver>,
     pub fallback: Option<Solver>,
     pub rules: Rules,
+    pub callback: Option<Box<dyn Fn(&[(u32, u32)])>>,
 }
 
-impl Default for Config {
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("base", &self.base)
+            .field("solvers", &self.solvers)
+            .field("fallback", &self.fallback)
+            .field("rules", &self.rules)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Default for ConfigDescriptor {
     fn default() -> Self {
         Self {
             base: Solver::Base,
@@ -313,11 +353,12 @@ impl Default for Config {
             ],
             fallback: Some(Solver::BackTrace),
             rules: Rules::default(),
+            callback: None,
         }
     }
 }
 
-impl Config {
+impl ConfigDescriptor {
     pub fn add_rules_solvers(&mut self) {
         if !self.rules.cages.cages.is_empty() {
             self.solvers.insert(0, Solver::Cage)
@@ -330,7 +371,7 @@ pub struct State {
     pub sudoku: Sudoku,
     pub options: Options,
     pub info: Info,
-    pub config: Rc<Config>,
+    pub config: Config,
 }
 
 impl State {
@@ -374,9 +415,7 @@ pub struct Info {
     pub valid: bool,
 
     pub progress: Vec<(u32, u32)>,
-    pub total: Option<u32>, 
-    pub prg_string: String,   
-    pub start: f64,
+    pub total: Option<u32>,
 }
 
 impl Info {
@@ -416,8 +455,6 @@ impl Default for Info {
 
             progress: Vec::new(),
             total: None,
-            prg_string: String::new(),
-            start: 0.0 //std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64(),
         }
     }
 }

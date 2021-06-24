@@ -139,31 +139,15 @@ impl EntrySolver for Backtrace {
 
             true
         } else {
-            // println!("{:?}", &state.info.progress);
-
             false
         };
 
-        // let mut chance = 0.0;
-        // let mut part = 1;
-        // for &(g, t) in &state.info.progress {
-        //     chance += (g as f64 / t as f64) / part as f64;
-        //     part *= t;
-        // }
-        // let prg_display = format!("{:.4}", chance);
-        // if prg_display != state.info.prg_string {
-        //     println!(
-        //         "{:.4},{}",
-        //         std::time::SystemTime::now()
-        //             .duration_since(UNIX_EPOCH)
-        //             .unwrap()
-        //             .as_secs_f64()
-        //             - state.info.start,
-        //         prg_display
-        //     );
-        //     std::io::stdout().flush().expect("stdout flush");
-        //     state.info.prg_string = prg_display;
-        // }
+        let mut chance = 0.0;
+        let mut part = 1;
+        for &(g, t) in &state.info.progress {
+            chance += (g as f64 / t as f64) / part as f64;
+            part *= t;
+        }
         advance
     }
 
