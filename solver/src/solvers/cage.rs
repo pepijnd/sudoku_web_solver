@@ -35,7 +35,9 @@ impl CageSolver {
                 }
             }
             let size = cage_cells.len();
-            let mut sums = (0..size).map(|i| (cage_cells[i].0, CellOptions::default())).collect::<Vec<_>>();
+            let mut sums = (0..size)
+                .map(|i| (cage_cells[i].0, CellOptions::default()))
+                .collect::<Vec<_>>();
             let mut buffer = (0..size).map(|_| (0, 0)).collect::<Vec<_>>();
             let mut i = 0;
             let mut valid = true;
@@ -74,7 +76,7 @@ impl CageSolver {
                         if !test {
                             return false;
                         }
-                        break
+                        break;
                     }
                     i -= 1;
                 }
@@ -114,21 +116,24 @@ impl Default for CageSolver {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Config, ConfigDescriptor, EntrySolver, State, Sudoku, rules::{Cages, Rules}};
+    use crate::{
+        rules::{Cages, Rules},
+        Config, ConfigDescriptor, EntrySolver, State, Sudoku,
+    };
 
     use super::CageSolver;
 
     #[test]
     fn test() {
-        let mut config = ConfigDescriptor{
+        let mut config = ConfigDescriptor {
             rules: Rules {
                 cages: Cages {
                     cages: vec![20, 27, 26, 24, 28, 17, 18, 30, 16, 24],
                     cells: [
-                        0, 0, 0, 0, 1, 2, 2, 2, 3, 0, 0, 0, 0, 1, 1, 1, 2, 3, 0, 0, 0, 0,
-                        4, 4, 5, 5, 3, 0, 0, 0, 0, 0, 4, 4, 5, 3, 6, 7, 8, 0, 0, 0, 4, 5,
-                        3, 6, 7, 8, 8, 0, 0, 0, 0, 0, 6, 7, 7, 8, 8, 0, 0, 0, 0, 6, 9, 10,
-                        10, 10, 0, 0, 0, 0, 6, 9, 9, 9, 10, 0, 0, 0, 0,
+                        0, 0, 0, 0, 1, 2, 2, 2, 3, 0, 0, 0, 0, 1, 1, 1, 2, 3, 0, 0, 0, 0, 4, 4, 5,
+                        5, 3, 0, 0, 0, 0, 0, 4, 4, 5, 3, 6, 7, 8, 0, 0, 0, 4, 5, 3, 6, 7, 8, 8, 0,
+                        0, 0, 0, 0, 6, 7, 7, 8, 8, 0, 0, 0, 0, 6, 9, 10, 10, 10, 0, 0, 0, 0, 6, 9,
+                        9, 9, 10, 0, 0, 0, 0,
                     ],
                 },
             },

@@ -29,6 +29,7 @@ struct StateModStep<'a> {
 #[derive(Debug)]
 pub struct SudokuInfo {
     measure: Option<Measure>,
+    progress: Option<Vec<(u32, u32)>>,
     solve: Option<Solve>,
     step: usize,
     s_step: Option<SolveStep>,
@@ -42,6 +43,14 @@ impl SudokuInfo {
 
     pub fn set_measure(&mut self, m: Measure) {
         self.measure = Some(m);
+    }
+
+    pub fn progress(&self) -> Option<&[(u32, u32)]> {
+        self.progress.as_ref().map(|f| &f[..])
+    }
+
+    pub fn set_progress(&mut self, p: Vec<(u32, u32)>) {
+        self.progress = Some(p);
     }
 
     pub fn solve(&self) -> Option<&Solve> {
@@ -132,6 +141,7 @@ impl Default for SudokuInfo {
     fn default() -> Self {
         Self {
             measure: None,
+            progress: None,
             solve: None,
             step: 0,
             s_step: None,

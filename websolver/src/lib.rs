@@ -32,8 +32,12 @@ pub fn run() -> Result<(), JsValue> {
 
 #[cfg(feature = "worker")]
 #[wasm_bindgen]
-pub fn solve(sudoku: &JsValue, rules: &JsValue) -> Result<JsValue, JsValue> {
-use solver::ConfigDescriptor;
+pub fn solve(
+    sudoku: &JsValue,
+    rules: &JsValue,
+    callback: &js_sys::Function,
+) -> Result<JsValue, JsValue> {
+    use solver::ConfigDescriptor;
 
     let sudoku: Sudoku = sudoku
         .into_serde()
@@ -47,6 +51,12 @@ use solver::ConfigDescriptor;
         ..Default::default()
     };
     config.add_rules_solvers();
+    let callback = callback.clone();
+    config.callback = Some(Box::new(move |progress| {
+        let value = JsValue::from_serde(progress).unwrap();
+        let this = JsValue::null();
+        callback.call1(&this, &value).unwrap();
+    }));
     let config = Config::new(config);
     let solve = sudoku.solve_steps(Some(config));
     JsValue::from_serde(&solve).map_err(|e| JsValue::from_str(&format!("{}", e)))

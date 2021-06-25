@@ -16,9 +16,10 @@ import("../pkg").then((lib) => {
       app.set_solver(solve);
       app.start();
     } else if (e.data[0] == "solved") {
-      console.log(e.data[1]);
       app.on_solve(e.data[1]);
       app.on_measure(e.data[2]);
+    } else if (e.data[0] == "progress") {
+      app.on_progress(e.data[1]);
     }
   };
   worker.postMessage(["init"]);

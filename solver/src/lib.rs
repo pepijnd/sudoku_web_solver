@@ -5,7 +5,7 @@ pub mod solvers;
 pub mod sudoku;
 pub mod util;
 
-use std::{ops::Deref, rc::Rc, time::UNIX_EPOCH};
+use std::{ops::Deref, rc::Rc};
 
 use rules::Rules;
 use serde::{Deserialize, Serialize};
@@ -321,12 +321,14 @@ impl Config {
     }
 }
 
+type Callback = Box<dyn Fn(&[(u32, u32)])>;
+
 pub struct ConfigDescriptor {
     pub base: Solver,
     pub solvers: Vec<Solver>,
     pub fallback: Option<Solver>,
     pub rules: Rules,
-    pub callback: Option<Box<dyn Fn(&[(u32, u32)])>>,
+    pub callback: Option<Callback>,
 }
 
 impl std::fmt::Debug for Config {

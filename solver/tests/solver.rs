@@ -1,4 +1,4 @@
-use solver::{Config, ConfigDescriptor, Sudoku, rules::Rules, solvers::Solver, sudoku::Solution};
+use solver::{rules::Rules, solvers::Solver, sudoku::Solution, Config, ConfigDescriptor, Sudoku};
 
 static INPUT: &[(&str, &str)] = &[
     (

@@ -1,7 +1,5 @@
 //!
 
-use std::rc::Rc;
-
 use crate::{
     output::{ser_array::a81, Solve},
     rules::Rules,

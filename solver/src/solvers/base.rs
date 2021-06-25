@@ -1,5 +1,3 @@
-use std::{io::Write, time::UNIX_EPOCH};
-
 use crate::{Cell, CellMod, CellOptions, EntrySolver, State, StateMod};
 
 #[derive(Debug, Copy, Clone)]
@@ -141,13 +139,11 @@ impl EntrySolver for Backtrace {
         } else {
             false
         };
-
-        let mut chance = 0.0;
-        let mut part = 1;
-        for &(g, t) in &state.info.progress {
-            chance += (g as f64 / t as f64) / part as f64;
-            part *= t;
+        println!("{:?}", &state.info.progress);
+        if let Some(callback) = &state.config.callback {
+            callback(&state.info.progress[..]);
         }
+
         advance
     }
 
@@ -174,13 +170,12 @@ impl Backtrace {
                     };
                     let options = state.options.options(cell, &state.sudoku);
                     let cell = Cell::new(row, col);
-                    let mut score = 10-options.len();
+                    let mut score = 10 - options.len();
                     if state.config.rules.cages.cells[cell.index()] != 0 {
                         score *= 2;
                     }
                     if candidate.is_none() || score > candidate.unwrap().0 {
                         candidate.replace((score, cell, options));
-                        
                     }
                 }
             }
