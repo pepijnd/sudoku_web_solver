@@ -20,9 +20,12 @@ impl Sudoku {
     pub fn solve(&self, config: Option<Config>) -> Solution {
         let config = config.unwrap_or_default();
 
-        let mut buffer = Buffer::new(*self, config);
+        let mut buffer = Buffer::new(*self, config.clone());
         loop {
             let entry = buffer.get().unwrap();
+            if config.canceled() {
+                return Solution::Incomplete(entry.sudoku);
+            }
             if entry.advance() {
                 let next = entry.make_next();
                 let entry = buffer.push(next).unwrap();
@@ -58,9 +61,12 @@ impl Sudoku {
     pub fn solve_steps(&self, config: Option<Config>) -> Solve {
         let config = config.unwrap_or_default();
 
-        let mut buffer = Buffer::new(*self, config);
+        let mut buffer = Buffer::new(*self, config.clone());
         loop {
             let entry = buffer.get().unwrap();
+            if config.canceled() {
+                return Solve::from(buffer);
+            }
             if entry.advance() {
                 let next = entry.make_next();
                 let entry = buffer.push(next).unwrap();
@@ -94,9 +100,9 @@ impl Sudoku {
         let mut solutions = Vec::new();
         let config = config.unwrap_or_default();
 
-        let mut buffer = Buffer::new(*self, config);
+        let mut buffer = Buffer::new(*self, config.clone());
         loop {
-            if solutions.len() >= 1000 {
+            if solutions.len() >= 1000 || config.canceled() {
                 return solutions;
             }
 

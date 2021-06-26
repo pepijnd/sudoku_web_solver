@@ -295,6 +295,7 @@ impl ModTarget {
 #[derive(Clone)]
 pub struct Config {
     pub inner: Rc<ConfigDescriptor>,
+    cancel: std::cell::Cell<bool>,
 }
 
 impl Deref for Config {
@@ -309,6 +310,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             inner: Rc::new(Default::default()),
+            cancel: std::cell::Cell::new(false),
         }
     }
 }
@@ -317,7 +319,16 @@ impl Config {
     pub fn new(desc: ConfigDescriptor) -> Config {
         Config {
             inner: Rc::new(desc),
+            cancel: std::cell::Cell::new(false),
         }
+    }
+
+    pub fn cancel(&self) {
+        self.cancel.set(true);
+    }
+
+    pub fn canceled(&self) -> bool {
+        self.cancel.get()
     }
 }
 

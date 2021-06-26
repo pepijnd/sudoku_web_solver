@@ -1,6 +1,6 @@
-@import './mixins.scss';
-@import './variables.scss';
-@import './sudoku.scss';
+@import "./mixins.scss";
+@import "./variables.scss";
+@import "./sudoku.scss";
 
 html {
   font-family: Helvetica, Arial, sans-serif;
@@ -134,4 +134,43 @@ html {
 
 .solve-info {
   margin-top: 5px;
+}
+
+.progress-text::after {
+  content: var(--progress-chance);
+}
+
+.progress-bar {
+  background-color: white;
+  height: 100px;
+  width: 250px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: flex-end;
+  .progress-bar-part {
+    background-color: black;
+    width: 10%;
+    border-top-left-radius: 25%;
+    border-top-right-radius: 25%;
+    transition: height 0.5s ease-in-out;
+    &.progress-bar-1 {
+      height: var(--progress-part-0);
+    }
+    &.progress-bar-2 {
+      height: var(--progress-part-1);
+    }
+    &.progress-bar-3 {
+      height: var(--progress-part-2);
+    }
+    &.progress-bar-4 {
+      height: var(--progress-part-3);
+    }
+    &.progress-bar-5 {
+      height: var(--progress-part-4);
+    }
+    &.progress-bar-6 {
+      height: var(--progress-part-5);
+    }
+  }
 }

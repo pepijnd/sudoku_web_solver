@@ -49,8 +49,10 @@ impl SudokuInfo {
         self.progress.as_ref().map(|f| &f[..])
     }
 
-    pub fn set_progress(&mut self, p: Vec<(u32, u32)>) {
+    pub fn set_progress(&mut self, p: Vec<(u32, u32)>) -> Result<()> {
         self.progress = Some(p);
+        self.update_properties()?;
+        Ok(())
     }
 
     pub fn solve(&self) -> Option<&Solve> {
@@ -109,6 +111,39 @@ impl SudokuInfo {
             style.set_property("--step-display", "'0'").unwrap();
             style.set_property("--step-place", "50%").unwrap();
         }
+
+        let max_steps = 6;
+        if let Some(progress) = self.progress() {
+            style
+                .set_property(
+                    "--progress-steps",
+                    &format!("{}", progress.len().min(max_steps)),
+                )
+                .unwrap();
+            for step in 0..max_steps.min(progress.len()) {
+                let (chance, _)  = progress[step..progress.len()]
+                    .iter()
+                    .fold((0.0, 1), |(chance, part), &(g, t)| {
+                        ((g as f64 / t as f64) / part as f64 + chance, part * t)
+                    });
+                style.set_property(&format!("--progress-part-{}", step), &format!("{:.2}%", chance * 100.0)).unwrap();
+                if step == 0 {
+                    style
+                    .set_property("--progress-chance", &format!("'{:.2}%'", chance * 100.0))
+                    .unwrap();
+                }
+            }
+            for i in progress.len()..max_steps {
+                style
+                    .set_property(&format!("--progress-part-{}", i), "0.0%")
+                    .unwrap();
+            }
+        } else {
+            style
+            .set_property("--progress-chance", &format!("'{:.2}%'", 0.0))
+            .unwrap();
+        }
+
         Ok(())
     }
 

@@ -53,7 +53,15 @@ impl Info {
 
 #[we_builder(
     <div class="progress">
-        <p we_field="chance" />
+        <div class="progress-bar">
+            <div class="progress-bar-part progress-bar-1" />
+            <div class="progress-bar-part progress-bar-2" />
+            <div class="progress-bar-part progress-bar-3" />
+            <div class="progress-bar-part progress-bar-4" />
+            <div class="progress-bar-part progress-bar-5" />
+            <div class="progress-bar-part progress-bar-6" />
+        </div>
+        <p class="progress-text" />
     </div>
 )]
 #[derive(Debug, Clone, WebElement)]
@@ -62,18 +70,19 @@ pub struct Progress {
 
 impl Progress {
     pub fn update(&self, info: &InfoController) -> Result<()> {
-        let info = info.info.borrow();
+        let _ = info;
+        // let info = info.info.borrow();
 
-        let mut chance = 0.0;
-        let mut part = 1;
-        if let Some(progress) = info.progress() {
-            for &(g, t) in progress {
-                chance += (g as f64 / t as f64) / part as f64;
-                part *= t;
-            }
-        }
+        // let mut chance = 0.0;
+        // let mut part = 1;
+        // if let Some(progress) = info.progress() {
+        //     for &(g, t) in progress {
+        //         chance += (g as f64 / t as f64) / part as f64;
+        //         part *= t;
+        //     }
+        // }
 
-        self.chance.set_text(format!("{:.2}%", chance * 100.0));
+        // self.chance.set_text(format!("{:.2}%", chance * 100.0));
 
         Ok(())
     }

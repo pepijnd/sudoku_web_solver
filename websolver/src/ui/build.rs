@@ -80,8 +80,8 @@ impl App {
         let p = p
             .into_serde::<Vec<(u32, u32)>>()
             .map_err(|e| JsValue::from_str(&format!("{}", e)))?;
-        self.controller.info.info.borrow_mut().set_progress(p);
-        self.controller.info.update();
+        self.controller.info.info.borrow_mut().set_progress(p)?;
+        self.controller.info.update()?;
         Ok(())
     }
 }
