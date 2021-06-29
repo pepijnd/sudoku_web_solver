@@ -1,12 +1,10 @@
-use crate::{
-    options::OptionPair, util::SetDomain, Cell, CellMod, CellOptions, EntrySolver, State, StateMod,
-};
+use crate::{AdvanceResult, Cell, CellMod, CellOptions, EntrySolver, State, StateMod, options::OptionPair, util::SetDomain};
 
 #[derive(Debug, Copy, Clone)]
 pub struct XYWingSolver;
 
 impl EntrySolver for XYWingSolver {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         for row in 0..9 {
             for col in 0..9 {
                 let cell = Cell::new(row, col);
@@ -19,7 +17,7 @@ impl EntrySolver for XYWingSolver {
                 }
             }
         }
-        true
+        AdvanceResult::Advance
     }
 }
 

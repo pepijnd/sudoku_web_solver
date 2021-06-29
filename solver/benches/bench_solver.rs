@@ -60,7 +60,7 @@ fn killer_benchmark(c: &mut Criterion) {
             ..Default::default()
         };
         config.add_rules_solvers();
-        let config = Config::new(config);
+        let config = Config::new(config, None);
         b.iter(|| {
             black_box(sudoku.solve(Some(config.clone())));
         })

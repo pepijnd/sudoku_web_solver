@@ -1,4 +1,4 @@
-use crate::{util::SetDomain, CellMod, EntrySolver, State, StateMod};
+use crate::{AdvanceResult, CellMod, EntrySolver, State, StateMod, util::SetDomain};
 
 #[derive(Debug, Copy, Clone)]
 pub struct RowSet {
@@ -40,12 +40,12 @@ impl RowSet {
 pub struct XWingSolver;
 
 impl EntrySolver for XWingSolver {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         for nr in 1..=9 {
             Self::test(SetDomain::Row, nr, state);
             Self::test(SetDomain::Col, nr, state);
         }
-        true
+        AdvanceResult::Advance
     }
 }
 

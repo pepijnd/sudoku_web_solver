@@ -1,5 +1,3 @@
-#![cfg(feature = "webui")]
-
 mod build;
 mod controller;
 mod model;

@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![warn(missing_debug_implementations)]
+
 pub mod options;
 pub mod output;
 pub mod rules;
@@ -5,7 +8,7 @@ pub mod solvers;
 pub mod sudoku;
 pub mod util;
 
-use std::{ops::Deref, rc::Rc};
+use std::{num::NonZeroUsize, ops::Deref, sync::Arc};
 
 use rules::Rules;
 use serde::{Deserialize, Serialize};
@@ -19,6 +22,14 @@ pub use {
     sudoku::Sudoku,
     util::Cell,
 };
+
+#[derive(Debug)]
+pub enum AdvanceResult {
+    Advance,
+    Invalid,
+    Split(Vec<Sudoku>)
+}
+
 
 #[derive(Debug, Clone)]
 pub struct Entry {
@@ -60,7 +71,7 @@ impl Entry {
                 let mut test_state = state.clone();
                 test_state.info.tech = tech;
                 let mut entry = Entry::from_state(test_state);
-                if !entry.advance() {
+                if !matches!(entry.advance(), AdvanceResult::Advance) {
                     state.info.tech = Solver::Invalid;
                     state.info.push_state();
                     return Entry::from_state(state);
@@ -96,7 +107,7 @@ impl Entry {
         }
     }
 
-    pub fn advance(&mut self) -> bool {
+    pub fn advance(&mut self) -> AdvanceResult {
         self.state.info.tech = self.solver;
         self.entry.advance(&mut self.state)
     }
@@ -292,10 +303,20 @@ impl ModTarget {
     }
 }
 
+
+#[derive(Debug, Clone, Copy)]
+pub enum Target {
+    Sudoku,
+    Steps,
+    List,
+}
+
 #[derive(Clone)]
 pub struct Config {
-    pub inner: Rc<ConfigDescriptor>,
+    inner: Arc<ConfigDescriptor>,
+    callback: Arc<Option<Callback>>,
     cancel: std::cell::Cell<bool>,
+    threading_depth: usize,
 }
 
 impl Deref for Config {
@@ -309,17 +330,28 @@ impl Deref for Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            inner: Rc::new(Default::default()),
+            inner: Arc::new(Default::default()),
+            callback: Arc::new(None),
             cancel: std::cell::Cell::new(false),
+            threading_depth: 0,
         }
     }
 }
 
 impl Config {
-    pub fn new(desc: ConfigDescriptor) -> Config {
+    pub fn new(desc: ConfigDescriptor, callback: Option<Callback>) -> Config {
         Config {
-            inner: Rc::new(desc),
+            inner: Arc::new(desc),
+            callback: Arc::new(callback),
             cancel: std::cell::Cell::new(false),
+            threading_depth: 0,
+        }
+    }
+
+    pub(crate) fn next_depth(&self) -> Config {
+        Config {
+            threading_depth: self.threading_depth + 1,
+            .. self.clone()
         }
     }
 
@@ -333,13 +365,14 @@ impl Config {
 }
 
 type Callback = Box<dyn Fn(&[(u32, u32)])>;
-
+#[derive(Debug, Clone)]
 pub struct ConfigDescriptor {
     pub base: Solver,
     pub solvers: Vec<Solver>,
     pub fallback: Option<Solver>,
     pub rules: Rules,
-    pub callback: Option<Callback>,
+    pub target: Target,
+    pub max_threading_depth: Option<NonZeroUsize>
 }
 
 impl std::fmt::Debug for Config {
@@ -366,7 +399,8 @@ impl Default for ConfigDescriptor {
             ],
             fallback: Some(Solver::BackTrace),
             rules: Rules::default(),
-            callback: None,
+            target: Target::Steps,
+            max_threading_depth: None
         }
     }
 }
@@ -507,7 +541,7 @@ impl Clone for Box<dyn EntrySolver> {
 }
 
 pub trait EntrySolver: SolverExt + std::fmt::Debug {
-    fn advance(&mut self, state: &mut State) -> bool;
+    fn advance(&mut self, state: &mut State) -> AdvanceResult;
     fn verified(&self) -> bool {
         true
     }

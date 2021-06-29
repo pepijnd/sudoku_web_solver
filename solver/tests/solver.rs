@@ -1,4 +1,6 @@
-use solver::{rules::Rules, solvers::Solver, sudoku::Solution, Config, ConfigDescriptor, Sudoku};
+use solver::{
+    rules::Rules, solvers::Solver, sudoku::SolveResult, Config, ConfigDescriptor, Sudoku, Target,
+};
 
 static INPUT: &[(&str, &str)] = &[
     (
@@ -50,21 +52,41 @@ static INPUT: &[(&str, &str)] = &[
 #[test]
 fn solver_solve() {
     for (_i, &(sudoku, solution)) in INPUT.iter().enumerate() {
-        let solve = Sudoku::from(sudoku).solve(None);
-        if let Solution::Complete(solve) = solve {
-            assert_eq!(solve, Sudoku::from(solution));
+        let solve = Sudoku::from(sudoku).solve(Some(Config::new(
+            ConfigDescriptor {
+                target: Target::Sudoku,
+                ..Default::default()
+            },
+            None,
+        )));
+        if let SolveResult::Solution(solve) = solve {
+            assert_eq!(Sudoku::from(solution), solve);
         } else {
-            panic!("No valid solution found");
-        };
+            panic!("result type should be of solution")
+        }
     }
 }
 
 #[test]
 fn solver_steps() {
     for &(sudoku, _solution) in INPUT {
-        let solve = Sudoku::from(sudoku).solve_steps(None);
-        assert!(solve.end().valid);
-        assert_eq!(solve.end().solver, Solver::Solved);
+        let solve = Sudoku::from(sudoku).solve(Some(Config::new(
+            ConfigDescriptor {
+                target: Target::Steps,
+                ..Default::default()
+            },
+            None,
+        )));
+        if let SolveResult::Steps(solve) = solve {
+            assert!(solve.end().valid, "Solution should be valid");
+            assert_eq!(
+                solve.end().solver,
+                Solver::Solved,
+                "Final solver should be Solver::Solved"
+            );
+        } else {
+            panic!("Result type should be of type Steps")
+        }
     }
 }
 
@@ -91,10 +113,14 @@ fn solver_cages() {
 
     let mut config = ConfigDescriptor {
         rules,
+        target: Target::Sudoku,
         ..Default::default()
     };
     config.add_rules_solvers();
-    let solve = sudoku.solve_steps(Some(Config::new(config)));
-    assert!(solve.end().valid);
-    assert_eq!(solve.end().solver, Solver::Solved);
+    let solve = sudoku.solve(Some(Config::new(config, None)));
+    if let SolveResult::Solution(_) = solve {
+        // TODO: check for valid solution
+    } else {
+        panic!("result should be of type Solution")
+    }
 }

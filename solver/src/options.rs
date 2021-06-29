@@ -180,6 +180,7 @@ impl PartialEq for OptionPair {
     }
 }
 
+#[derive(Debug)]
 pub struct OptionsIter<'a> {
     options: &'a CellOptions,
     i: u8,

@@ -1,10 +1,10 @@
-use crate::{Cell, CellMod, CellOptions, EntrySolver, State, StateMod};
+use crate::{AdvanceResult, Cell, CellMod, CellOptions, EntrySolver, State, StateMod};
 
 #[derive(Debug, Copy, Clone)]
 pub struct CageSolver;
 
 impl EntrySolver for CageSolver {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         Self::test(state)
     }
 }
@@ -16,7 +16,7 @@ enum CellState {
 }
 
 impl CageSolver {
-    fn test(state: &mut State) -> bool {
+    fn test(state: &mut State) -> AdvanceResult {
         let cages = state.config.rules.cages.clone();
 
         for (cage, &total) in cages.cages.iter().enumerate() {
@@ -74,7 +74,7 @@ impl CageSolver {
                 } else {
                     if i == 0 {
                         if !test {
-                            return false;
+                            return AdvanceResult::Invalid;
                         }
                         break;
                     }
@@ -104,7 +104,7 @@ impl CageSolver {
                 state.info.push_mod(mods);
             }
         }
-        true
+        AdvanceResult::Advance
     }
 }
 
@@ -116,10 +116,7 @@ impl Default for CageSolver {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        rules::{Cages, Rules},
-        Config, ConfigDescriptor, EntrySolver, State, Sudoku,
-    };
+    use crate::{AdvanceResult, Config, ConfigDescriptor, EntrySolver, State, Sudoku, rules::{Cages, Rules}};
 
     use super::CageSolver;
 
@@ -144,10 +141,10 @@ mod tests {
             sudoku: Sudoku::from(
                 ".....8...........................................................................",
             ),
-            config: Config::new(config),
+            config: Config::new(config, None),
             ..Default::default()
         };
         let mut solver = CageSolver {};
-        assert!(solver.advance(&mut state));
+        assert!(matches!(solver.advance(&mut state), AdvanceResult::Advance));
     }
 }

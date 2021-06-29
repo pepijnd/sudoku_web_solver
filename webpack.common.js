@@ -3,7 +3,6 @@ const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-
 const dist = path.resolve(__dirname, "dist");
 
 module.exports = {
@@ -55,18 +54,17 @@ module.exports = {
           }),
         new WasmPackPlugin({
             crateDirectory: path.resolve(__dirname, "websolver"),
-            outDir: path.resolve(__dirname, "pkg"),
+            outDir: path.resolve(__dirname, "pkg_webui"),
             extraArgs: "--no-typescript",
             watchDirectories: [
-                path.resolve(__dirname, "websolver/ui"),
                 path.resolve(__dirname, "solver"),
             ],
         }),
         new WasmPackPlugin({
-            crateDirectory: path.resolve(__dirname, "websolver"),
-            outDir: path.resolve(__dirname, "pkg_solver"),
+            crateDirectory: path.resolve(__dirname, "worker"),
+            outDir: path.resolve(__dirname, "pkg_worker"),
             outName: "worker",
-            extraArgs: "--no-typescript -- --no-default-features --features=worker",
+            extraArgs: "--no-typescript",
             watchDirectories: [
                 path.resolve(__dirname, "solver"),
             ],

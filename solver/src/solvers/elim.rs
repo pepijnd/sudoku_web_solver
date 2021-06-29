@@ -1,10 +1,10 @@
-use crate::{util::SetDomain, Cell, CellMod, EntrySolver, State, StateMod};
+use crate::{AdvanceResult, Cell, CellMod, EntrySolver, State, StateMod, util::SetDomain};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ElimSolver;
 
 impl EntrySolver for ElimSolver {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         for value in 1..=9 {
             for i in 0..9 {
                 Self::test_sqr(i, value, state);
@@ -12,7 +12,7 @@ impl EntrySolver for ElimSolver {
                 Self::test(i, SetDomain::Col, value, state);
             }
         }
-        true
+        AdvanceResult::Advance
     }
 }
 

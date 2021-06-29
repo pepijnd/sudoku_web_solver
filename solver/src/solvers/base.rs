@@ -1,12 +1,12 @@
-use crate::{Cell, CellMod, CellOptions, EntrySolver, State, StateMod};
+use crate::{AdvanceResult, Cell, CellMod, CellOptions, EntrySolver, State, StateMod};
 
 #[derive(Debug, Copy, Clone)]
 pub struct StateInit;
 
 impl EntrySolver for StateInit {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         state.info.push_state();
-        true
+        AdvanceResult::Advance
     }
 }
 
@@ -20,8 +20,8 @@ impl Default for StateInit {
 pub struct StateSolved;
 
 impl EntrySolver for StateSolved {
-    fn advance(&mut self, _state: &mut State) -> bool {
-        false
+    fn advance(&mut self, _state: &mut State) -> AdvanceResult {
+        AdvanceResult::Invalid
     }
 
     fn terminate(&self) -> bool {
@@ -39,8 +39,8 @@ impl Default for StateSolved {
 pub struct StateIncomplete;
 
 impl EntrySolver for StateIncomplete {
-    fn advance(&mut self, _state: &mut State) -> bool {
-        false
+    fn advance(&mut self, _state: &mut State) -> AdvanceResult {
+        AdvanceResult::Invalid
     }
 
     fn terminate(&self) -> bool {
@@ -58,9 +58,9 @@ impl Default for StateIncomplete {
 pub struct StateInvalid;
 
 impl EntrySolver for StateInvalid {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         state.info.correct = false;
-        false
+        AdvanceResult::Invalid
     }
 
     fn terminate(&self) -> bool {
@@ -78,7 +78,7 @@ impl Default for StateInvalid {
 pub struct BaseSolver;
 
 impl EntrySolver for BaseSolver {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         let mut solved = true;
         let mut mods = StateMod::from(state.info.tech);
         for row in 0..9 {
@@ -91,7 +91,8 @@ impl EntrySolver for BaseSolver {
                         state.update(cell, value);
                         mods.push_target(CellMod::digit(cell, value));
                     } else if options.is_empty() {
-                        return false;
+                        return 
+                        AdvanceResult::Invalid;
                     } else {
                         solved = false;
                     }
@@ -102,7 +103,7 @@ impl EntrySolver for BaseSolver {
             state.info.push_mod(mods);
         }
         state.info.solved = solved;
-        true
+        AdvanceResult::Advance
     }
 }
 
@@ -119,7 +120,7 @@ pub struct Backtrace {
 }
 
 impl EntrySolver for Backtrace {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         state.info.correct = false;
         let advance = if let Some((cell, value, size)) = self.next(state) {
             if state.info.total.is_none() {
@@ -135,12 +136,11 @@ impl EntrySolver for Backtrace {
             state.info.push_mod(mods);
             state.update(cell, value);
 
-            true
+            AdvanceResult::Advance
         } else {
-            false
+            AdvanceResult::Invalid
         };
-        println!("{:?}", &state.info.progress);
-        if let Some(callback) = &state.config.callback {
+        if let Some(callback) = state.config.callback.as_ref() {
             callback(&state.info.progress[..]);
         }
 

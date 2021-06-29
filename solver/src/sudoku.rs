@@ -1,13 +1,22 @@
 //!
 
-use crate::{
-    output::{ser_array::a81, Solve},
-    rules::Rules,
-    util::Domain,
-    Cell, Config, Entry, Info, Options, Solver,
-};
+use crate::{AdvanceResult, Cell, Config, Entry, Info, Options, Solver, Target, output::{ser_array::a81, Solve}, rules::Rules, util::Domain};
 
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone)]
+pub enum SolveResult {
+    Invalid,
+    Solution(Sudoku),
+    Incomplete(Sudoku),
+    Steps(Box<Solve>),
+    List(Vec<Sudoku>),
+    Jobs {
+        results: Option<Box<SolveResult>>,
+        config: Config,
+        jobs: Vec<Sudoku>,
+    },
+}
 
 /// Data structure that holds sudoku data.
 #[derive(Debug, Copy, Clone, Deserialize, Serialize)]
@@ -17,114 +26,97 @@ pub struct Sudoku {
 }
 
 impl Sudoku {
-    pub fn solve(&self, config: Option<Config>) -> Solution {
+    pub fn solve(&self, config: Option<Config>) -> SolveResult {
         let config = config.unwrap_or_default();
 
-        let mut buffer = Buffer::new(*self, config.clone());
-        loop {
-            let entry = buffer.get().unwrap();
-            if config.canceled() {
-                return Solution::Incomplete(entry.sudoku);
-            }
-            if entry.advance() {
-                let next = entry.make_next();
-                let entry = buffer.push(next).unwrap();
-                if entry.terminate() {
-                    return match entry.info {
-                        Info { valid: false, .. } => Solution::Invalid,
-                        Info { solved: true, .. } => Solution::Complete(entry.sudoku),
-                        Info { solved: false, .. } => Solution::Incomplete(entry.sudoku),
-                    };
-                }
-            } else {
-                let mut last_known = None;
-                loop {
-                    let old = buffer.pop().unwrap();
-                    if last_known.is_none() && old.info.correct {
-                        last_known = Some(old.sudoku);
-                    }
-                    if let Some(entry) = buffer.get() {
-                        entry.merge_info(&old);
-                        if !entry.verified() {
-                            break;
-                        };
-                    } else if let Some(last) = last_known {
-                        return Solution::Incomplete(last);
-                    } else {
-                        return Solution::Invalid;
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn solve_steps(&self, config: Option<Config>) -> Solve {
-        let config = config.unwrap_or_default();
-
-        let mut buffer = Buffer::new(*self, config.clone());
-        loop {
-            let entry = buffer.get().unwrap();
-            if config.canceled() {
-                return Solve::from(buffer);
-            }
-            if entry.advance() {
-                let next = entry.make_next();
-                let entry = buffer.push(next).unwrap();
-                if entry.terminate() {
-                    return Solve::from(buffer);
-                }
-            } else {
-                let mut last_known = None;
-
-                loop {
-                    let old = buffer.pop().unwrap();
-                    if last_known.is_none() && old.info.correct {
-                        last_known = Some(buffer.clone());
-                    }
-                    if let Some(entry) = buffer.get() {
-                        entry.merge_info(&old);
-                        if !entry.verified() {
-                            break;
-                        };
-                    } else if let Some(last) = last_known {
-                        return Solve::from(last);
-                    } else {
-                        return Solve::invalid(*self, buffer.rules.clone());
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn solve_all(&self, config: Option<Config>) -> Vec<Sudoku> {
         let mut solutions = Vec::new();
-        let config = config.unwrap_or_default();
-
         let mut buffer = Buffer::new(*self, config.clone());
         loop {
-            if solutions.len() >= 1000 || config.canceled() {
-                return solutions;
-            }
-
             let entry = buffer.get().unwrap();
-            if entry.advance() {
-                let next = entry.make_next();
-                let entry = buffer.push(next).unwrap();
-                if entry.terminate() && entry.info.valid && entry.info.solved {
-                    solutions.push(entry.sudoku);
+            if config.canceled() || solutions.len() > 1000 {
+                match config.target {
+                    Target::Sudoku => {
+                        return SolveResult::Incomplete(entry.sudoku);
+                    }
+                    Target::Steps => return SolveResult::Steps(Box::new(Solve::from(buffer))),
+                    Target::List => return SolveResult::List(solutions),
                 }
-            } else {
-                loop {
-                    let old = buffer.pop().unwrap();
-                    if let Some(entry) = buffer.get() {
-                        entry.merge_info(&old);
-                        if !entry.verified() {
-                            break;
+            }
+            match entry.advance() {
+                AdvanceResult::Advance => {
+                    let next = entry.make_next();
+                    let entry = buffer.push(next).unwrap();
+                    if entry.terminate() {
+                        match config.target {
+                            Target::Sudoku => {
+                                return match entry.info {
+                                    Info { valid: false, .. } => SolveResult::Invalid,
+                                    Info { solved: true, .. } => {
+                                        SolveResult::Solution(entry.sudoku)
+                                    }
+                                    Info { solved: false, .. } => {
+                                        SolveResult::Incomplete(entry.sudoku)
+                                    }
+                                }
+                            }
+                            Target::Steps => {
+                                return SolveResult::Steps(Box::new(Solve::from(buffer)))
+                            }
+                            Target::List => {
+                                if entry.info.valid && entry.info.solved {
+                                    solutions.push(entry.sudoku)
+                                }
+                            }
                         };
-                    } else {
-                        return solutions;
                     }
                 }
+                AdvanceResult::Invalid => {
+                    let mut last_known = None;
+                    loop {
+                        let old = buffer.pop().unwrap();
+                        if last_known.is_none() && old.info.correct {
+                            last_known = Some(buffer.clone());
+                        }
+                        if let Some(entry) = buffer.get() {
+                            entry.merge_info(&old);
+                            if !entry.verified() {
+                                break;
+                            };
+                        } else {
+                            match config.target {
+                                Target::Sudoku => {
+                                    if let Some(last) = last_known.map(|mut b| b.pop()).flatten() {
+                                        return SolveResult::Incomplete(last.sudoku);
+                                    } else {
+                                        return SolveResult::Invalid;
+                                    }
+                                }
+                                Target::Steps => {
+                                    if let Some(last) = last_known {
+                                        return SolveResult::Steps(Box::new(Solve::from(last)));
+                                    } else {
+                                        return SolveResult::Steps(Box::new(Solve::invalid(
+                                            *self,
+                                            buffer.rules.clone(),
+                                        )));
+                                    }
+                                }
+                                Target::List => return SolveResult::List(solutions),
+                            }
+                        }
+                    }
+                }
+                AdvanceResult::Split(jobs) => {
+                    return SolveResult::Jobs {
+                        results: Some(Box::new(match config.target {
+                            Target::Sudoku => SolveResult::Incomplete(entry.sudoku),
+                            Target::Steps => SolveResult::Steps(Box::new(Solve::from(buffer))),
+                            Target::List => SolveResult::List(solutions),
+                        })),
+                        config: config.next_depth(),
+                        jobs,
+                    }
+                },
             }
         }
     }
@@ -302,7 +294,7 @@ mod test {
         let sudoku = Sudoku::from(
             "....27....1...4.....9..57...8....3..5..9..1......32...6.1....4...8....9.....4.6.5",
         );
-        let solutions = sudoku.solve_all(None);
-        assert_eq!(solutions.len(), 235);
+        let _solutions = sudoku.solve(None);
+        // assert_eq!(solutions.len(), 235);
     }
 }

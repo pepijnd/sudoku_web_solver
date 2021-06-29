@@ -1,10 +1,10 @@
-use crate::{util::SetDomain, Cell, CellMod, EntrySolver, State, StateMod};
+use crate::{AdvanceResult, Cell, CellMod, EntrySolver, State, StateMod, util::SetDomain};
 
 #[derive(Debug, Copy, Clone)]
 pub struct SetSolver;
 
 impl EntrySolver for SetSolver {
-    fn advance(&mut self, state: &mut State) -> bool {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
         for domain in 0..9 {
             for cell in 0..9 {
                 Self::test(domain, cell, SetDomain::Sqr, state);
@@ -12,7 +12,7 @@ impl EntrySolver for SetSolver {
                 Self::test(domain, cell, SetDomain::Col, state);
             }
         }
-        true
+        AdvanceResult::Advance
     }
 }
 

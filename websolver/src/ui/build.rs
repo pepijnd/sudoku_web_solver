@@ -1,14 +1,13 @@
-#![cfg(feature = "webui")]
-use wasm_bindgen::prelude::*;
-
 use crate::util::{InitCell, Measure};
 
 use super::{controller::app::AppController, view::app::AppElement};
 use solver::{Solve, Sudoku};
 use webelements::{document, WebElementBuilder};
 
+use wasm_bindgen::prelude::*;
+
 #[wasm_bindgen]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct App {
     controller: InitCell<AppController>,
     element: AppElement,
@@ -26,7 +25,21 @@ impl App {
         })
     }
 
-    pub fn start(&self) -> Result<(), JsValue> {
+    pub fn on_worker_msg(&self, msg: JsValue) {
+        webelements::log(format!("{:?}", msg));
+    }
+
+    pub fn start(&self, worker: JsValue) -> Result<(), JsValue> {
+        let worker = webelements::Worker::new(worker)?;
+
+        let app = self.clone();
+        let worker_ref = worker.clone();
+        worker.set_onmessage(move |value| {
+            app.on_worker_msg(value);
+            worker_ref.post_message(&JsValue::from_str("hi from main thread")).unwrap();
+        })?;
+        
+
         let sudoku = Sudoku::from(
             ".................................................................................",
         );
