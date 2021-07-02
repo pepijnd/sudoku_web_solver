@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[doc(inline)]
 pub use self::{
     base::StateSolved,
-    base::{Backtrace, BaseSolver, StateIncomplete, StateInit, StateInvalid},
+    base::{Backtrace, BaseSolver, StateIncomplete, StateInit, StateNoOp, StateInvalid},
     cage::CageSolver,
     elim::ElimSolver,
     sets::SetSolver,
@@ -25,6 +25,7 @@ mod xywing;
 #[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Solver {
     Init,
+    NoOp,
     BackTrace,
     Base,
     Cage,
@@ -48,6 +49,7 @@ impl Solver {
     pub fn make(&self) -> Box<dyn EntrySolver> {
         match self {
             Solver::Init => Box::new(StateInit::default()),
+            Solver::NoOp => Box::new(StateNoOp::default()),
             Solver::BackTrace => Box::new(Backtrace::default()),
             Solver::Base => Box::new(BaseSolver::default()),
             Solver::Cage => Box::new(CageSolver::default()),

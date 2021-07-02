@@ -21,9 +21,9 @@ pub enum SolveResult {
 
 #[derive(Debug, Clone)]
 pub struct SolveJobs {
-    buffer: Buffer,
-    config: Config,
-    jobs: Vec<Entry>,
+    pub buffer: Buffer,
+    pub config: Config,
+    pub jobs: Vec<Entry>,
 }
 
 
@@ -36,8 +36,8 @@ pub struct Sudoku {
 impl Sudoku {
     pub fn solve(self, config: Option<Config>) -> SolveResult {
         let config = config.unwrap_or_default();
-        let buffer = Buffer::new(self, config.clone());
-        buffer.solve(config)
+        let buffer = Buffer::new(self, config);
+        buffer.solve()
     }
 
     pub fn cell(&self, cell: Cell) -> &u8 {
@@ -180,12 +180,13 @@ impl Buffer {
     }
 
 
-    pub fn solve(mut self, config: Config) -> SolveResult {
+    pub fn solve(mut self) -> SolveResult {
         let mut solutions = Vec::new();
         loop {
             let entry = self.get().unwrap();
-            if config.canceled() || solutions.len() > 1000 {
-                match config.target {
+            let config = entry.config.clone();
+            if /*config.canceled() ||*/ solutions.len() > 1000 {
+                match entry.config.target {
                     Target::Sudoku => {
                         return SolveResult::Incomplete(entry.sudoku);
                     }

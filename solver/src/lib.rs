@@ -8,11 +8,154 @@ pub mod solvers;
 pub mod sudoku;
 pub mod util;
 
-use std::{num::NonZeroUsize, ops::Deref, sync::Arc};
+use std::{
+    borrow::BorrowMut,
+    num::NonZeroUsize,
+    ops::Deref,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex, MutexGuard, RwLock,
+    },
+};
 
 use rules::Rules;
 use serde::{Deserialize, Serialize};
+use sudoku::{Buffer, SolveResult};
 use util::Domain;
+
+#[derive(Debug)]
+pub struct RunnerJobs {
+    config: Config,
+    buffer: Buffer,
+    entries: Vec<Entry>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Runner {
+    id: Option<usize>,
+    queue: Arc<Mutex<Vec<RunnerJobs>>>,
+    output: Arc<Mutex<Vec<Sudoku>>>,
+    runners: Arc<Vec<AtomicBool>>,
+}
+
+impl Runner {
+    pub fn new(sudoku: Sudoku, rules: Rules) -> Self {
+        let mut config_desc = ConfigDescriptor {
+            rules,
+            target: Target::List,
+            max_threading_depth: NonZeroUsize::new(8),
+            ..Default::default()
+        };
+        config_desc.add_rules_solvers();
+        let config = Config::new(config_desc, None);
+        let mut queue = Vec::new();
+        let mut buffer = Buffer::new(sudoku, config.clone());
+        let mut state = buffer
+            .get()
+            .expect("buffer always starts with at least one entry")
+            .state
+            .clone();
+        state.info.tech = Solver::NoOp;
+        queue.push(RunnerJobs {
+            config,
+            buffer,
+            entries: vec![Entry::from_state(state)],
+        });
+        Self {
+            id: None,
+            queue: Arc::new(Mutex::new(queue)),
+            output: Default::default(),
+            runners: Arc::new((0..8).map(|_| AtomicBool::new(true)).collect()),
+        }
+    }
+
+    pub fn run(&self) -> Vec<Sudoku> {
+        let runners = self
+            .runners
+            .iter()
+            .enumerate()
+            .map(|(i, _)| {
+                let runner = self.clone();
+                std::thread::spawn(move || {
+                    let runner = Self {
+                        id: Some(i),
+                        ..runner
+                    };
+                    runner.thread_run()
+                })
+            })
+            .collect::<Vec<_>>();
+        for runner in runners {
+            runner.join().unwrap()
+        }
+        self.output.lock().unwrap().clone()
+    }
+
+    fn thread_run(&self) {
+        let mut status = true;
+        loop {
+            if let Some(mut job) = {
+                let mut jobs = self.queue.lock().unwrap();
+                jobs.retain(|j| !j.entries.is_empty());
+                if let Some(job) = jobs.first_mut() {
+                    if !status {
+                        status = true;
+                        self.runners
+                            .get(self.id.unwrap())
+                            .unwrap()
+                            .store(status, Ordering::Release);
+                    }
+                    let mut entry = job.entries.pop().unwrap();
+                    let mut buffer = job.buffer.clone();
+                    entry.config = job.config.clone();
+                    buffer.push(entry);
+                    Some(buffer)
+                } else {
+                    None
+                }
+            } {
+                let config = &job.get().unwrap().config;
+                eprintln!(
+                    "Thread: {} depth {}/{}",
+                    self.id.unwrap(),
+                    config.threading_depth,
+                    config.max_threading_depth.unwrap()
+                );
+                match job.solve() {
+                    SolveResult::List(ref solutions) => {
+                        let mut output = self.output.lock().unwrap();
+                        output.extend_from_slice(solutions)
+                    }
+                    SolveResult::Jobs(jobs) => {
+                        let mut queue = self.queue.lock().unwrap();
+                        queue.push(RunnerJobs {
+                            config: jobs.config,
+                            buffer: jobs.buffer,
+                            entries: jobs.jobs,
+                        })
+                    }
+                    _ => {}
+                }
+            } else {
+                status = false;
+                self.runners
+                    .get(self.id.unwrap())
+                    .unwrap()
+                    .store(status, Ordering::Release);
+                let mut done = true;
+                for runner in self.runners.iter() {
+                    if runner.load(Ordering::Acquire) {
+                        done = false;
+                    }
+                }
+                if done {
+                    break;
+                }
+                std::thread::yield_now();
+            }
+        }
+    }
+}
 
 #[doc(inline)]
 pub use {
@@ -27,7 +170,7 @@ pub use {
 pub enum AdvanceResult {
     Advance,
     Invalid,
-    Split(Vec<Entry>)
+    Split(Vec<Entry>),
 }
 
 #[derive(Debug, Clone)]
@@ -314,7 +457,6 @@ impl ModTarget {
     }
 }
 
-
 #[derive(Debug, Clone, Copy)]
 pub enum Target {
     Sudoku,
@@ -325,8 +467,6 @@ pub enum Target {
 #[derive(Clone)]
 pub struct Config {
     inner: Arc<ConfigDescriptor>,
-    callback: Arc<Option<Callback>>,
-    cancel: std::cell::Cell<bool>,
     threading_depth: usize,
 }
 
@@ -342,8 +482,6 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             inner: Arc::new(Default::default()),
-            callback: Arc::new(None),
-            cancel: std::cell::Cell::new(false),
             threading_depth: 0,
         }
     }
@@ -353,8 +491,6 @@ impl Config {
     pub fn new(desc: ConfigDescriptor, callback: Option<Callback>) -> Config {
         Config {
             inner: Arc::new(desc),
-            callback: Arc::new(callback),
-            cancel: std::cell::Cell::new(false),
             threading_depth: 0,
         }
     }
@@ -362,17 +498,17 @@ impl Config {
     pub(crate) fn next_depth(&self) -> Config {
         Config {
             threading_depth: self.threading_depth + 1,
-            .. self.clone()
+            ..self.clone()
         }
     }
 
-    pub fn cancel(&self) {
-        self.cancel.set(true);
-    }
+    // pub fn cancel(&self) {
+    //     self.cancel.set(true);
+    // }
 
-    pub fn canceled(&self) -> bool {
-        self.cancel.get()
-    }
+    // pub fn canceled(&self) -> bool {
+    //     self.cancel.get()
+    // }
 }
 
 type Callback = Box<dyn Fn(&[(u32, u32)])>;
@@ -383,7 +519,7 @@ pub struct ConfigDescriptor {
     pub fallback: Option<Solver>,
     pub rules: Rules,
     pub target: Target,
-    pub max_threading_depth: Option<NonZeroUsize>
+    pub max_threading_depth: Option<NonZeroUsize>,
 }
 
 impl std::fmt::Debug for Config {
@@ -411,7 +547,7 @@ impl Default for ConfigDescriptor {
             fallback: Some(Solver::BackTrace),
             rules: Rules::default(),
             target: Target::Steps,
-            max_threading_depth: None
+            max_threading_depth: None,
         }
     }
 }
@@ -551,7 +687,7 @@ impl Clone for Box<dyn EntrySolver> {
     }
 }
 
-pub trait EntrySolver: SolverExt + std::fmt::Debug {
+pub trait EntrySolver: SolverExt + std::fmt::Debug + Send {
     fn advance(&mut self, state: &mut State) -> AdvanceResult;
     fn verified(&self) -> bool {
         true

@@ -17,6 +17,22 @@ impl Default for StateInit {
 }
 
 #[derive(Debug, Copy, Clone)]
+pub struct StateNoOp;
+
+impl EntrySolver for StateNoOp {
+    fn advance(&mut self, state: &mut State) -> AdvanceResult {
+        AdvanceResult::Advance
+    }
+}
+
+impl Default for StateNoOp {
+    fn default() -> Self {
+        Self
+    }
+}
+
+
+#[derive(Debug, Copy, Clone)]
 pub struct StateSolved;
 
 impl EntrySolver for StateSolved {
