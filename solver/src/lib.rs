@@ -27,9 +27,8 @@ pub use {
 pub enum AdvanceResult {
     Advance,
     Invalid,
-    Split(Vec<Sudoku>)
+    Split(Vec<Entry>)
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Entry {
@@ -245,6 +244,18 @@ impl StateMod {
         self.source
             .iter()
             .any(|c| c.cell == cell && c.target.is_option(option))
+    }
+
+    fn from_change(solver: Solver, cell: Cell, value: u8) -> Self {
+        Self {
+            solver,
+            source: smallvec::smallvec![],
+            target: smallvec::smallvec![CellMod {
+                cell,
+                target: ModTarget::Digit(value)
+            }],
+            marks: smallvec::smallvec![],
+        }
     }
 
     fn apply(&self, s: &mut Sudoku, c: &mut Options) {

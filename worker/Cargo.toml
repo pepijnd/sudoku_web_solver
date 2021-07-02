@@ -18,7 +18,7 @@ alloc = ["wee_alloc"]
 
 [dependencies]
 solver = { version="0.1.0", path="../solver" }
-webelements = { version="0.1.1", path="../../webelements/webelements" }
+webelements = "0.1.1"
 
 js-sys = "0.3.50"
 serde = { version="1.0.126", features=["derive"] }
@@ -27,7 +27,6 @@ console_error_panic_hook = "0.1.5"
 
 wee_alloc = { version = "0.4.2", optional=true }
 
-# These crates are used for running unit tests.
 [dev-dependencies]
 wasm-bindgen-test = "0.3.24"
 wasm-bindgen-futures = "0.4.24"

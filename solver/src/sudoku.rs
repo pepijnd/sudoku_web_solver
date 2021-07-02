@@ -1,6 +1,11 @@
 //!
 
-use crate::{AdvanceResult, Cell, Config, Entry, Info, Options, Solver, Target, output::{ser_array::a81, Solve}, rules::Rules, util::Domain};
+use crate::{
+    output::{ser_array::a81, Solve},
+    rules::Rules,
+    util::Domain,
+    AdvanceResult, Cell, Config, Entry, Info, Options, Solver, Target,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -11,14 +16,17 @@ pub enum SolveResult {
     Incomplete(Sudoku),
     Steps(Box<Solve>),
     List(Vec<Sudoku>),
-    Jobs {
-        results: Option<Box<SolveResult>>,
-        config: Config,
-        jobs: Vec<Sudoku>,
-    },
+    Jobs(Box<SolveJobs>),
 }
 
-/// Data structure that holds sudoku data.
+#[derive(Debug, Clone)]
+pub struct SolveJobs {
+    buffer: Buffer,
+    config: Config,
+    jobs: Vec<Entry>,
+}
+
+
 #[derive(Debug, Copy, Clone, Deserialize, Serialize)]
 pub struct Sudoku {
     #[serde(with = "a81")]
@@ -26,99 +34,10 @@ pub struct Sudoku {
 }
 
 impl Sudoku {
-    pub fn solve(&self, config: Option<Config>) -> SolveResult {
+    pub fn solve(self, config: Option<Config>) -> SolveResult {
         let config = config.unwrap_or_default();
-
-        let mut solutions = Vec::new();
-        let mut buffer = Buffer::new(*self, config.clone());
-        loop {
-            let entry = buffer.get().unwrap();
-            if config.canceled() || solutions.len() > 1000 {
-                match config.target {
-                    Target::Sudoku => {
-                        return SolveResult::Incomplete(entry.sudoku);
-                    }
-                    Target::Steps => return SolveResult::Steps(Box::new(Solve::from(buffer))),
-                    Target::List => return SolveResult::List(solutions),
-                }
-            }
-            match entry.advance() {
-                AdvanceResult::Advance => {
-                    let next = entry.make_next();
-                    let entry = buffer.push(next).unwrap();
-                    if entry.terminate() {
-                        match config.target {
-                            Target::Sudoku => {
-                                return match entry.info {
-                                    Info { valid: false, .. } => SolveResult::Invalid,
-                                    Info { solved: true, .. } => {
-                                        SolveResult::Solution(entry.sudoku)
-                                    }
-                                    Info { solved: false, .. } => {
-                                        SolveResult::Incomplete(entry.sudoku)
-                                    }
-                                }
-                            }
-                            Target::Steps => {
-                                return SolveResult::Steps(Box::new(Solve::from(buffer)))
-                            }
-                            Target::List => {
-                                if entry.info.valid && entry.info.solved {
-                                    solutions.push(entry.sudoku)
-                                }
-                            }
-                        };
-                    }
-                }
-                AdvanceResult::Invalid => {
-                    let mut last_known = None;
-                    loop {
-                        let old = buffer.pop().unwrap();
-                        if last_known.is_none() && old.info.correct {
-                            last_known = Some(buffer.clone());
-                        }
-                        if let Some(entry) = buffer.get() {
-                            entry.merge_info(&old);
-                            if !entry.verified() {
-                                break;
-                            };
-                        } else {
-                            match config.target {
-                                Target::Sudoku => {
-                                    if let Some(last) = last_known.map(|mut b| b.pop()).flatten() {
-                                        return SolveResult::Incomplete(last.sudoku);
-                                    } else {
-                                        return SolveResult::Invalid;
-                                    }
-                                }
-                                Target::Steps => {
-                                    if let Some(last) = last_known {
-                                        return SolveResult::Steps(Box::new(Solve::from(last)));
-                                    } else {
-                                        return SolveResult::Steps(Box::new(Solve::invalid(
-                                            *self,
-                                            buffer.rules.clone(),
-                                        )));
-                                    }
-                                }
-                                Target::List => return SolveResult::List(solutions),
-                            }
-                        }
-                    }
-                }
-                AdvanceResult::Split(jobs) => {
-                    return SolveResult::Jobs {
-                        results: Some(Box::new(match config.target {
-                            Target::Sudoku => SolveResult::Incomplete(entry.sudoku),
-                            Target::Steps => SolveResult::Steps(Box::new(Solve::from(buffer))),
-                            Target::List => SolveResult::List(solutions),
-                        })),
-                        config: config.next_depth(),
-                        jobs,
-                    }
-                },
-            }
-        }
+        let buffer = Buffer::new(self, config.clone());
+        buffer.solve(config)
     }
 
     pub fn cell(&self, cell: Cell) -> &u8 {
@@ -258,6 +177,96 @@ impl Buffer {
         let state = Entry::new(sudoku, Options::default(), Solver::Init, config);
         buffer.push(state);
         Self { buffer, rules }
+    }
+
+
+    pub fn solve(mut self, config: Config) -> SolveResult {
+        let mut solutions = Vec::new();
+        loop {
+            let entry = self.get().unwrap();
+            if config.canceled() || solutions.len() > 1000 {
+                match config.target {
+                    Target::Sudoku => {
+                        return SolveResult::Incomplete(entry.sudoku);
+                    }
+                    Target::Steps => return SolveResult::Steps(Box::new(Solve::from(self))),
+                    Target::List => return SolveResult::List(solutions),
+                }
+            }
+            match entry.advance() {
+                AdvanceResult::Advance => {
+                    let next = entry.make_next();
+                    let entry = self.push(next).unwrap();
+                    if entry.terminate() {
+                        match config.target {
+                            Target::Sudoku => {
+                                return match entry.info {
+                                    Info { valid: false, .. } => SolveResult::Invalid,
+                                    Info { solved: true, .. } => {
+                                        SolveResult::Solution(entry.sudoku)
+                                    }
+                                    Info { solved: false, .. } => {
+                                        SolveResult::Incomplete(entry.sudoku)
+                                    }
+                                }
+                            }
+                            Target::Steps => {
+                                return SolveResult::Steps(Box::new(Solve::from(self)))
+                            }
+                            Target::List => {
+                                if entry.info.valid && entry.info.solved {
+                                    solutions.push(entry.sudoku)
+                                }
+                            }
+                        };
+                    }
+                }
+                AdvanceResult::Invalid => {
+                    let mut last_known = None;
+                    loop {
+                        let old = self.pop().unwrap();
+                        if last_known.is_none() && old.info.correct {
+                            last_known = Some(self.clone());
+                        }
+                        if let Some(entry) = self.get() {
+                            entry.merge_info(&old);
+                            if !entry.verified() {
+                                break;
+                            };
+                        } else {
+                            match config.target {
+                                Target::Sudoku => {
+                                    if let Some(last) = last_known.map(|mut b| b.pop()).flatten() {
+                                        return SolveResult::Incomplete(last.sudoku);
+                                    } else {
+                                        return SolveResult::Invalid;
+                                    }
+                                }
+                                Target::Steps => {
+                                    if let Some(last) = last_known {
+                                        return SolveResult::Steps(Box::new(Solve::from(last)));
+                                    } else {
+                                        return SolveResult::Steps(Box::new(Solve::invalid(
+                                            old.sudoku,
+                                            self.rules.clone(),
+                                        )));
+                                    }
+                                }
+                                Target::List => return SolveResult::List(solutions),
+                            }
+                        }
+                    }
+                }
+                AdvanceResult::Split(jobs) => {
+                    self.pop();
+                    return SolveResult::Jobs(Box::new(SolveJobs {
+                        buffer: self,
+                        config: config.next_depth(),
+                        jobs,
+                    }))
+                }
+            }
+        }
     }
 
     pub fn get(&mut self) -> Option<&mut Entry> {

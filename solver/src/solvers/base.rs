@@ -1,4 +1,4 @@
-use crate::{AdvanceResult, Cell, CellMod, CellOptions, EntrySolver, State, StateMod};
+use crate::{AdvanceResult, Cell, CellMod, CellOptions, Entry, EntrySolver, Solver, State, StateMod};
 
 #[derive(Debug, Copy, Clone)]
 pub struct StateInit;
@@ -91,8 +91,7 @@ impl EntrySolver for BaseSolver {
                         state.update(cell, value);
                         mods.push_target(CellMod::digit(cell, value));
                     } else if options.is_empty() {
-                        return 
-                        AdvanceResult::Invalid;
+                        return AdvanceResult::Invalid;
                     } else {
                         solved = false;
                     }
@@ -117,78 +116,81 @@ impl Default for BaseSolver {
 pub struct Backtrace {
     cell: Option<Cell>,
     options: CellOptions,
+    job: bool,
 }
 
 impl EntrySolver for Backtrace {
     fn advance(&mut self, state: &mut State) -> AdvanceResult {
         state.info.correct = false;
-        let advance = if let Some((cell, value, size)) = self.next(state) {
-            if state.info.total.is_none() {
-                state.info.total = Some(size);
-                state.info.progress.push((0, size));
+        if self.job {
+            return AdvanceResult::Advance;
+        }
+        if self.cell.is_none() {
+            if let Some(cell) = Self::heuristic(state) {
+                self.cell.replace(cell);
+                self.options = state.options.options(cell, &state.sudoku)
             } else {
-                state.info.progress.last_mut().unwrap().0 = state.info.guesses;
+                return AdvanceResult::Invalid;
             }
-            state.info.guesses += 1;
-            state.info.guesses_t += 1;
-            let mut mods = StateMod::from(state.info.tech);
-            mods.push_target(cell.into());
-            state.info.push_mod(mods);
+        }
+        if let Some(max_depth) = state.config.max_threading_depth {
+            let cell = self.cell.expect("target cell should be set at this point");
+            if state.config.threading_depth < max_depth.get() {
+                let mut jobs = Vec::new();
+                for value in self.options.iter() {
+                    let mut state = state.clone();
+                    let mods = StateMod::from_change(state.info.tech, cell, value);
+                    state.info.push_mod(mods);
+                    state.update(cell, value);
+                    jobs.push(Entry {
+                        state,
+                        solver: Solver::BackTrace,
+                        entry: Box::new(Self {
+                            cell: Some(cell),
+                            options: CellOptions::default(),
+                            job: true,
+                        }),
+                    })
+                }
+                return AdvanceResult::Split(jobs);
+            }
+        }
+        if let Some(value) = self.options.take() {
+            let cell = self.cell.expect("target cell should be set at this point");
             state.update(cell, value);
-
+            let mods = StateMod::from_change(state.info.tech, cell, value);
+            state.info.push_mod(mods);
             AdvanceResult::Advance
         } else {
             AdvanceResult::Invalid
-        };
-        if let Some(callback) = state.config.callback.as_ref() {
-            callback(&state.info.progress[..]);
         }
-
-        advance
     }
 
     fn verified(&self) -> bool {
-        false
+        self.job
     }
 }
 
 impl Backtrace {
-    pub fn next(&mut self, state: &mut State) -> Option<(Cell, u8, u32)> {
-        if let Some(cell) = self.cell {
-            let size = self.options.len();
-            if let Some(value) = self.options.take() {
-                return Some((cell, value, size as u32));
-            }
-            None
-        } else {
-            let mut candidate: Option<(usize, Cell, CellOptions)> = None;
-            for row in 0..9 {
-                for col in 0..9 {
-                    let cell = Cell { row, col };
-                    if *state.sudoku.cell(cell) != 0 {
-                        continue;
-                    };
-                    let options = state.options.options(cell, &state.sudoku);
-                    let cell = Cell::new(row, col);
-                    let mut score = 10 - options.len();
-                    if state.config.rules.cages.cells[cell.index()] != 0 {
-                        score *= 2;
-                    }
-                    if candidate.is_none() || score > candidate.unwrap().0 {
-                        candidate.replace((score, cell, options));
-                    }
+    pub fn heuristic(state: &mut State) -> Option<Cell> {
+        let mut candidate: Option<(usize, Cell)> = None;
+        for row in 0..9 {
+            for col in 0..9 {
+                let cell = Cell::new(row, col);
+                if *state.sudoku.cell(cell) != 0 {
+                    continue;
+                };
+                let options = state.options.options(cell, &state.sudoku);
+                let mut score = 10 - options.len();
+                if state.config.rules.cages.cells[cell.index()] != 0 {
+                    score *= 2;
+                }
+                if candidate.is_none() || score > candidate.unwrap().0 {
+                    candidate.replace((score, cell));
                 }
             }
-            if let Some((_, cell, options)) = candidate {
-                self.cell = Some(cell);
-                self.options = options;
-                let size = self.options.len();
-                if let Some(option) = self.options.take() {
-                    return Some((cell, option, size as u32));
-                }
-            }
-            None
         }
+        candidate.map(|c| c.1)
     }
 }
 
@@ -197,13 +199,14 @@ impl Default for Backtrace {
         Self {
             cell: None,
             options: CellOptions::all(),
+            job: false,
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{Cell, CellOptions, EntrySolver, State, Sudoku};
+    use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State, Sudoku};
 
     use super::Backtrace;
 
@@ -226,5 +229,6 @@ mod test {
         assert_eq!(*state.sudoku.cell(Cell::new(0, 5)), 7);
         solver.advance(&mut state);
         assert_eq!(*state.sudoku.cell(Cell::new(0, 5)), 9);
+        assert!(matches!(solver.advance(&mut state), AdvanceResult::Invalid));
     }
 }
