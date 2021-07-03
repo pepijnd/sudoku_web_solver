@@ -1,12 +1,9 @@
-use crate::{
-    ui::{
-        controller::{app::AppController, info::InfoController},
-        model::info::Stat,
-    },
-    util::InitCell,
-};
-
 use webelements::{we_builder, Result, WebElement};
+
+use crate::ui::controller::app::AppController;
+use crate::ui::controller::info::InfoController;
+use crate::ui::model::info::Stat;
+use crate::util::InitCell;
 
 #[we_builder(
     <div class="solve-info">
@@ -65,8 +62,7 @@ impl Info {
     </div>
 )]
 #[derive(Debug, Clone, WebElement)]
-pub struct Progress {
-}
+pub struct Progress {}
 
 impl Progress {
     pub fn update(&self, info: &InfoController) -> Result<()> {

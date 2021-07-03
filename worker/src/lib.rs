@@ -26,7 +26,7 @@ impl Worker {
     #[wasm_bindgen(constructor)]
     pub fn new(scope: JsValue) -> Result<Worker, JsValue> {
         let worker = Self {
-            scope: Scope::new(scope)?
+            scope: Scope::new(scope)?,
         };
         let worker_ref = worker.clone();
         worker.scope.set_onmessage(move |value| {

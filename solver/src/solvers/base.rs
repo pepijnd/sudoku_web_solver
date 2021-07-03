@@ -1,4 +1,5 @@
-use crate::{AdvanceResult, Cell, CellMod, CellOptions, Entry, EntrySolver, Solver, State, StateMod};
+use crate::solving::{CellMod, Entry, StateMod};
+use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, Solver, State};
 
 #[derive(Debug, Copy, Clone)]
 pub struct StateInit;
@@ -20,7 +21,7 @@ impl Default for StateInit {
 pub struct StateNoOp;
 
 impl EntrySolver for StateNoOp {
-    fn advance(&mut self, state: &mut State) -> AdvanceResult {
+    fn advance(&mut self, _state: &mut State) -> AdvanceResult {
         AdvanceResult::Advance
     }
 }
@@ -30,7 +31,6 @@ impl Default for StateNoOp {
         Self
     }
 }
-
 
 #[derive(Debug, Copy, Clone)]
 pub struct StateSolved;
@@ -151,13 +151,14 @@ impl EntrySolver for Backtrace {
         }
         if let Some(max_depth) = state.config.max_threading_depth {
             let cell = self.cell.expect("target cell should be set at this point");
-            if state.config.threading_depth < max_depth.get() {
+            if state.info.depth < max_depth.get() {
                 let mut jobs = Vec::new();
                 for value in self.options.iter() {
                     let mut state = state.clone();
                     let mods = StateMod::from_change(state.info.tech, cell, value);
                     state.info.push_mod(mods);
                     state.update(cell, value);
+                    state.info.depth += 1;
                     jobs.push(Entry {
                         state,
                         solver: Solver::BackTrace,
@@ -222,9 +223,8 @@ impl Default for Backtrace {
 
 #[cfg(test)]
 mod test {
-    use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State, Sudoku};
-
     use super::Backtrace;
+    use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State, Sudoku};
 
     static SAMPLE: &str =
         "...6..8....35.4...65..217...6..............5..7138..2...7.1.6.4.1.......9....3..7";

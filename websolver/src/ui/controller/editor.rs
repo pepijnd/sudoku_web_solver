@@ -1,13 +1,10 @@
 use std::convert::TryInto;
 
-use crate::{
-    ui::editor::{Editor, EditorAction},
-    util::InitCell,
-};
-
 use webelements::Result;
 
 use crate::ui::app::AppController;
+use crate::ui::editor::{Editor, EditorAction};
+use crate::util::InitCell;
 
 #[derive(Debug, Clone)]
 pub struct EditorController {

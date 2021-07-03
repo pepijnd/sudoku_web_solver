@@ -1,11 +1,9 @@
-use crate::EntrySolver;
-
 use serde::{Deserialize, Serialize};
 
 #[doc(inline)]
 pub use self::{
     base::StateSolved,
-    base::{Backtrace, BaseSolver, StateIncomplete, StateInit, StateNoOp, StateInvalid},
+    base::{Backtrace, BaseSolver, StateIncomplete, StateInit, StateInvalid, StateNoOp},
     cage::CageSolver,
     elim::ElimSolver,
     sets::SetSolver,
@@ -13,6 +11,7 @@ pub use self::{
     xwing::XWingSolver,
     xywing::XYWingSolver,
 };
+use crate::EntrySolver;
 
 mod base;
 mod cage;

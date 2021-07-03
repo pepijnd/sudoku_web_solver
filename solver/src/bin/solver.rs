@@ -1,8 +1,8 @@
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
+
 use solver::Sudoku;
-use std::{
-    fs::File,
-    io::{prelude::*, BufReader},
-};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let time = std::time::Instant::now();

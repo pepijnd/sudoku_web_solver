@@ -1,5 +1,6 @@
-use crate::output::ser_array::a81;
 use serde::{Deserialize, Serialize};
+
+use crate::output::ser_array::a81;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Rules {

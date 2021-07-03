@@ -1,11 +1,9 @@
 use solver::Cell;
-
-use crate::{
-    ui::controller::{app::AppController, sudoku::SudokuController},
-    util::InitCell,
-};
-
 use webelements::{we_builder, Result, WebElement};
+
+use crate::ui::controller::app::AppController;
+use crate::ui::controller::sudoku::SudokuController;
+use crate::util::InitCell;
 
 #[we_builder(
     <div class="sdk-sudoku">

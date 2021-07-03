@@ -1,9 +1,8 @@
 #![feature(duration_constants)]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use solver::{
-    rules::{Cages, Rules},
-    Config, ConfigDescriptor, Sudoku,
-};
+use solver::config::{Config, ConfigDescriptor};
+use solver::rules::{Cages, Rules};
+use solver::Sudoku;
 
 static INPUT: &[(&str, &str)] = &[
     (

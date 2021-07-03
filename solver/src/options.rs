@@ -1,8 +1,7 @@
-#![allow(clippy::suspicious_operation_groupings)]
-
-use crate::{output::ser_array::a81, Cell, Sudoku};
-
 use serde::{Deserialize, Serialize};
+
+use crate::output::ser_array::a81;
+use crate::{Cell, Sudoku};
 
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, serde::Serialize, serde::Deserialize)]
 pub struct CellOptions(u16);
@@ -272,9 +271,8 @@ impl std::fmt::Display for Options {
 
 #[cfg(test)]
 mod test {
-    use crate::{Cell, CellOptions, Sudoku};
-
     use super::Options;
+    use crate::{Cell, CellOptions, Sudoku};
 
     #[test]
     fn options_all() {

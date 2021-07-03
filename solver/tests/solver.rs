@@ -1,6 +1,9 @@
-use solver::{
-    rules::Rules, solvers::Solver, sudoku::SolveResult, Config, ConfigDescriptor, Sudoku, Target,
-};
+use solver::config::{Config, ConfigDescriptor};
+use solver::rules::Rules;
+use solver::solvers::Solver;
+use solver::solving::Target;
+use solver::sudoku::SolveResult;
+use solver::Sudoku;
 
 static INPUT: &[(&str, &str)] = &[
     (

@@ -1,4 +1,5 @@
-use solver::{rules::Rules, Cell, Sudoku};
+use solver::rules::Rules;
+use solver::{Cell, Sudoku};
 
 #[derive(Debug)]
 pub struct SudokuStateModel {

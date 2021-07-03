@@ -1,4 +1,5 @@
-use std::{cell::UnsafeCell, rc::Rc};
+use std::cell::UnsafeCell;
+use std::rc::Rc;
 
 use lazy_static::__Deref;
 use serde::Deserialize;

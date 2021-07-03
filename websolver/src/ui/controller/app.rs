@@ -1,8 +1,10 @@
 use webelements::Result;
 
-use crate::{ui::view::app::AppElement, util::InitCell};
-
-use super::{editor::EditorController, info::InfoController, sudoku::SudokuController};
+use super::editor::EditorController;
+use super::info::InfoController;
+use super::sudoku::SudokuController;
+use crate::ui::view::app::AppElement;
+use crate::util::InitCell;
 
 #[derive(Debug, Clone)]
 pub struct AppController {

@@ -1,13 +1,9 @@
 use webelements::{we_builder, Result, WebElement, WebElementBuilder};
 
-use crate::{
-    ui::{
-        controller::app::AppController,
-        editor::{EditorAction, EditorController},
-        ButtonElement,
-    },
-    util::InitCell,
-};
+use crate::ui::controller::app::AppController;
+use crate::ui::editor::{EditorAction, EditorController};
+use crate::ui::ButtonElement;
+use crate::util::InitCell;
 
 #[we_builder(
     <div>

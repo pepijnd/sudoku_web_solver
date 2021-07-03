@@ -1,4 +1,6 @@
-use crate::{AdvanceResult, Cell, CellMod, EntrySolver, ModMarking, State, StateMod, util::Domain};
+use crate::solving::{CellMod, ModMarking, StateMod};
+use crate::util::Domain;
+use crate::{AdvanceResult, Cell, EntrySolver, State};
 
 #[derive(Debug, Copy, Clone)]
 pub struct SingleSolver;

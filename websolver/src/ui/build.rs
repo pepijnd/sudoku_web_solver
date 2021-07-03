@@ -1,10 +1,10 @@
-use crate::util::{InitCell, Measure};
-
-use super::{controller::app::AppController, view::app::AppElement};
 use solver::{Solve, Sudoku};
+use wasm_bindgen::prelude::*;
 use webelements::{document, WebElementBuilder};
 
-use wasm_bindgen::prelude::*;
+use super::controller::app::AppController;
+use super::view::app::AppElement;
+use crate::util::{InitCell, Measure};
 
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
@@ -36,9 +36,10 @@ impl App {
         let worker_ref = worker.clone();
         worker.set_onmessage(move |value| {
             app.on_worker_msg(value);
-            worker_ref.post_message(&JsValue::from_str("hi from main thread")).unwrap();
+            worker_ref
+                .post_message(&JsValue::from_str("hi from main thread"))
+                .unwrap();
         })?;
-        
 
         let sudoku = Sudoku::from(
             ".................................................................................",

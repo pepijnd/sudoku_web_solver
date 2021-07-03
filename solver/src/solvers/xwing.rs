@@ -1,4 +1,6 @@
-use crate::{AdvanceResult, CellMod, EntrySolver, State, StateMod, util::SetDomain};
+use crate::solving::{CellMod, StateMod};
+use crate::util::SetDomain;
+use crate::{AdvanceResult, EntrySolver, State};
 
 #[derive(Debug, Copy, Clone)]
 pub struct RowSet {

@@ -1,16 +1,13 @@
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use solver::Solve;
 use wasm_bindgen::JsValue;
-
-use crate::{
-    ui::sudoku::{Sudoku, SudokuModel, SudokuStateModel},
-    util::InitCell,
-};
-
 use webelements::Result;
 
 use super::app::AppController;
+use crate::ui::sudoku::{Sudoku, SudokuModel, SudokuStateModel};
+use crate::util::InitCell;
 
 #[derive(Debug, Clone)]
 pub struct SudokuController {

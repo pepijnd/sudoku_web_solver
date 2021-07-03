@@ -1,4 +1,7 @@
-use crate::{AdvanceResult, Cell, CellMod, CellOptions, EntrySolver, State, StateMod, options::OptionPair, util::SetDomain};
+use crate::options::OptionPair;
+use crate::solving::{CellMod, StateMod};
+use crate::util::SetDomain;
+use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State};
 
 #[derive(Debug, Copy, Clone)]
 pub struct XYWingSolver;

@@ -1,13 +1,13 @@
-//!
-
-use crate::{
-    output::{ser_array::a81, Solve},
-    rules::Rules,
-    util::Domain,
-    AdvanceResult, Cell, Config, Entry, Info, Options, Solver, Target,
-};
-
 use serde::{Deserialize, Serialize};
+
+use crate::config::Config;
+use crate::output::ser_array::a81;
+use crate::output::Solve;
+use crate::rules::Rules;
+use crate::solving::{Entry, Info, Target};
+use crate::threading::SolveJobs;
+use crate::util::Domain;
+use crate::{AdvanceResult, Cell, Options, Solver};
 
 #[derive(Debug, Clone)]
 pub enum SolveResult {
@@ -18,14 +18,6 @@ pub enum SolveResult {
     List(Vec<Sudoku>),
     Jobs(Box<SolveJobs>),
 }
-
-#[derive(Debug, Clone)]
-pub struct SolveJobs {
-    pub buffer: Buffer,
-    pub config: Config,
-    pub jobs: Vec<Entry>,
-}
-
 
 #[derive(Debug, Copy, Clone, Deserialize, Serialize)]
 pub struct Sudoku {
@@ -179,13 +171,14 @@ impl Buffer {
         Self { buffer, rules }
     }
 
-
     pub fn solve(mut self) -> SolveResult {
         let mut solutions = Vec::new();
         loop {
             let entry = self.get().unwrap();
             let config = entry.config.clone();
-            if /*config.canceled() ||*/ solutions.len() > 1000 {
+            if
+            /*config.canceled() ||*/
+            solutions.len() > 1000 {
                 match entry.config.target {
                     Target::Sudoku => {
                         return SolveResult::Incomplete(entry.sudoku);
@@ -230,7 +223,6 @@ impl Buffer {
                             last_known = Some(self.clone());
                         }
                         if let Some(entry) = self.get() {
-                            entry.merge_info(&old);
                             if !entry.verified() {
                                 break;
                             };
@@ -260,11 +252,7 @@ impl Buffer {
                 }
                 AdvanceResult::Split(jobs) => {
                     self.pop();
-                    return SolveResult::Jobs(Box::new(SolveJobs {
-                        buffer: self,
-                        config: config.next_depth(),
-                        jobs,
-                    }))
+                    return SolveResult::Jobs(Box::new(SolveJobs { buffer: self, jobs }));
                 }
             }
         }
@@ -286,13 +274,6 @@ impl Buffer {
     pub fn into_inner(self) -> Vec<Entry> {
         self.buffer
     }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum Solution {
-    Complete(Sudoku),
-    Incomplete(Sudoku),
-    Invalid,
 }
 
 #[cfg(test)]

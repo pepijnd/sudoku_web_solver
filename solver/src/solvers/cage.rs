@@ -1,4 +1,7 @@
-use crate::{AdvanceResult, Cell, CellMod, CellOptions, EntrySolver, State, StateMod};
+use smallvec::SmallVec;
+
+use crate::solving::{CellMod, StateMod};
+use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State};
 
 #[derive(Debug, Copy, Clone)]
 pub struct CageSolver;
@@ -20,7 +23,7 @@ impl CageSolver {
         let cages = state.config.rules.cages.clone();
 
         for (cage, &total) in cages.cages.iter().enumerate() {
-            let mut cage_cells = Vec::new();
+            let mut cage_cells: SmallVec<[(Cell, CellState); 9]> = SmallVec::new();
             for (index, &cell_cage) in cages.cells.iter().enumerate() {
                 if cell_cage != cage + 1 {
                     continue;
@@ -37,8 +40,8 @@ impl CageSolver {
             let size = cage_cells.len();
             let mut sums = (0..size)
                 .map(|i| (cage_cells[i].0, CellOptions::default()))
-                .collect::<Vec<_>>();
-            let mut buffer = (0..size).map(|_| (0, 0)).collect::<Vec<_>>();
+                .collect::<SmallVec<[_; 9]>>();
+            let mut buffer = (0..size).map(|_| (0, 0)).collect::<SmallVec<[_; 9]>>();
             let mut i = 0;
             let mut valid = true;
             let mut test = false;
@@ -116,9 +119,10 @@ impl Default for CageSolver {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AdvanceResult, Config, ConfigDescriptor, EntrySolver, State, Sudoku, rules::{Cages, Rules}};
-
     use super::CageSolver;
+    use crate::config::{Config, ConfigDescriptor};
+    use crate::rules::{Cages, Rules};
+    use crate::{AdvanceResult, EntrySolver, State, Sudoku};
 
     #[test]
     fn test() {

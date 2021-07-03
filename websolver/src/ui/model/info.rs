@@ -1,5 +1,7 @@
-use solver::{output::SolveStep, solvers::Solver, Options, Solve, StateMod, Sudoku};
-
+use solver::output::SolveStep;
+use solver::solvers::Solver;
+use solver::solving::StateMod;
+use solver::{Options, Solve, Sudoku};
 use webelements::Result;
 
 use crate::util::Measure;
@@ -121,16 +123,22 @@ impl SudokuInfo {
                 )
                 .unwrap();
             for step in 0..max_steps.min(progress.len()) {
-                let (chance, _)  = progress[step..progress.len()]
-                    .iter()
-                    .fold((0.0, 1), |(chance, part), &(g, t)| {
+                let (chance, _) = progress[step..progress.len()].iter().fold(
+                    (0.0, 1),
+                    |(chance, part), &(g, t)| {
                         ((g as f64 / t as f64) / part as f64 + chance, part * t)
-                    });
-                style.set_property(&format!("--progress-part-{}", step), &format!("{:.2}%", chance * 100.0)).unwrap();
+                    },
+                );
+                style
+                    .set_property(
+                        &format!("--progress-part-{}", step),
+                        &format!("{:.2}%", chance * 100.0),
+                    )
+                    .unwrap();
                 if step == 0 {
                     style
-                    .set_property("--progress-chance", &format!("'{:.2}%'", chance * 100.0))
-                    .unwrap();
+                        .set_property("--progress-chance", &format!("'{:.2}%'", chance * 100.0))
+                        .unwrap();
                 }
             }
             for i in progress.len()..max_steps {
@@ -140,8 +148,8 @@ impl SudokuInfo {
             }
         } else {
             style
-            .set_property("--progress-chance", &format!("'{:.2}%'", 0.0))
-            .unwrap();
+                .set_property("--progress-chance", &format!("'{:.2}%'", 0.0))
+                .unwrap();
         }
 
         Ok(())
@@ -157,8 +165,6 @@ impl SudokuInfo {
                     .as_ref()
                     .map(|s| s.iter().count())
                     .map(|c| format!("{}", c)),
-                Stat::Guesses => Some(format!("{}", step.guesses)),
-                Stat::GTotal => Some(format!("{}", step.guesses_t)),
                 Stat::GSteps => self
                     .solve()
                     .as_ref()

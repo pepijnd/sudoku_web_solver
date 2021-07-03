@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{rules::Rules, sudoku::Buffer, Info, Options, Solver, StateMod, Sudoku};
+use crate::rules::Rules;
+use crate::solving::{Info, StateMod};
+use crate::sudoku::Buffer;
+use crate::{Options, Solver, Sudoku};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Solve {
@@ -27,8 +30,6 @@ impl Solve {
                 cache,
                 solver: Solver::Incomplete,
                 change: StateMod::default(),
-                guesses: 0,
-                guesses_t: 0,
                 solved: false,
                 correct: true,
                 valid: false,
@@ -53,8 +54,6 @@ impl From<Buffer> for Solve {
                     let Info {
                         mods,
                         solved,
-                        guesses,
-                        guesses_t,
                         correct,
                         valid,
                         ..
@@ -69,8 +68,6 @@ impl From<Buffer> for Solve {
                             cache,
                             solver,
                             change: m,
-                            guesses,
-                            guesses_t,
                             solved,
                             correct,
                             valid,
@@ -90,8 +87,6 @@ pub struct SolveStep {
     pub cache: Options,
     pub solver: Solver,
     pub change: StateMod,
-    pub guesses: u32,
-    pub guesses_t: u32,
     pub solved: bool,
     pub correct: bool,
     pub valid: bool,
@@ -111,9 +106,11 @@ where
 macro_rules! serde_array {
     ($m:ident, $n:expr) => {
         pub mod $m {
-            pub use crate::output::serialize_array as serialize;
-            use serde::{de, Deserialize, Deserializer};
             use std::{mem, ptr};
+
+            use serde::{de, Deserialize, Deserializer};
+
+            pub use crate::output::serialize_array as serialize;
 
             pub fn deserialize<'de, D, T>(deserializer: D) -> Result<[T; $n], D::Error>
             where
