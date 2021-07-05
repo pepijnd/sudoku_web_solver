@@ -1,4 +1,5 @@
 #![warn(missing_debug_implementations)]
+#![feature(drain_filter)]
 
 pub mod config;
 pub mod options;
@@ -10,7 +11,7 @@ pub mod sudoku;
 pub mod threading;
 pub mod util;
 
-use solving::{AdvanceResult, SolverExt, State};
+use solving::{AdvanceResult, Reporter, State};
 #[doc(inline)]
 pub use {
     options::{CellOptions, Options},
@@ -20,24 +21,16 @@ pub use {
     util::Cell,
 };
 
+pub trait SolverExt {
+    fn as_cloned_box(&self) -> Box<dyn EntrySolver>;
+}
+
 impl<T> SolverExt for T
 where
-    T: 'static + EntrySolver + Clone + Default,
+    T: 'static + EntrySolver + Clone,
 {
     fn as_cloned_box(&self) -> Box<dyn EntrySolver> {
         Box::new(self.clone())
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
-    fn typename(&self) -> &str {
-        std::any::type_name::<Self>()
     }
 }
 
@@ -48,7 +41,7 @@ impl Clone for Box<dyn EntrySolver> {
 }
 
 pub trait EntrySolver: SolverExt + std::fmt::Debug + Send {
-    fn advance(&mut self, state: &mut State) -> AdvanceResult;
+    fn advance(&mut self, state: &mut State, reporter: &mut Reporter) -> AdvanceResult;
     fn verified(&self) -> bool {
         true
     }

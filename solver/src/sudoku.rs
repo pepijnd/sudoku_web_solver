@@ -4,7 +4,7 @@ use crate::config::Config;
 use crate::output::ser_array::a81;
 use crate::output::Solve;
 use crate::rules::Rules;
-use crate::solving::{Entry, Info, Target};
+use crate::solving::{Entry, Info, Reporter, Target};
 use crate::threading::SolveJobs;
 use crate::util::Domain;
 use crate::{AdvanceResult, Cell, Options, Solver};
@@ -26,10 +26,11 @@ pub struct Sudoku {
 }
 
 impl Sudoku {
-    pub fn solve(self, config: Option<Config>) -> SolveResult {
+    pub fn solve(self, config: Option<Config>, reporter: Option<Reporter>) -> SolveResult {
+        let reporter = reporter.unwrap_or_default();
         let config = config.unwrap_or_default();
         let buffer = Buffer::new(self, config);
-        buffer.solve()
+        buffer.solve(reporter)
     }
 
     pub fn cell(&self, cell: Cell) -> &u8 {
@@ -171,7 +172,7 @@ impl Buffer {
         Self { buffer, rules }
     }
 
-    pub fn solve(mut self) -> SolveResult {
+    pub fn solve(mut self, mut reporter: Reporter) -> SolveResult {
         let mut solutions = Vec::new();
         loop {
             let entry = self.get().unwrap();
@@ -187,7 +188,7 @@ impl Buffer {
                     Target::List => return SolveResult::List(solutions),
                 }
             }
-            match entry.advance() {
+            match entry.advance(&mut reporter) {
                 AdvanceResult::Advance => {
                     let next = entry.make_next();
                     let entry = self.push(next).unwrap();
@@ -251,8 +252,13 @@ impl Buffer {
                     }
                 }
                 AdvanceResult::Split(jobs) => {
+                    let split_depth = entry.info.splits;
                     self.pop();
-                    return SolveResult::Jobs(Box::new(SolveJobs { buffer: self, jobs }));
+                    return SolveResult::Jobs(Box::new(SolveJobs {
+                        buffer: self,
+                        jobs,
+                        split_depth,
+                    }));
                 }
             }
         }
@@ -285,7 +291,7 @@ mod test {
         let sudoku = Sudoku::from(
             "....27....1...4.....9..57...8....3..5..9..1......32...6.1....4...8....9.....4.6.5",
         );
-        let _solutions = sudoku.solve(None);
+        let _solutions = sudoku.solve(None, None);
         // assert_eq!(solutions.len(), 235);
     }
 }

@@ -1,13 +1,13 @@
 use smallvec::SmallVec;
 
-use crate::solving::{CellMod, StateMod};
+use crate::solving::{CellMod, Reporter, StateMod};
 use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State};
 
 #[derive(Debug, Copy, Clone)]
 pub struct CageSolver;
 
 impl EntrySolver for CageSolver {
-    fn advance(&mut self, state: &mut State) -> AdvanceResult {
+    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
         Self::test(state)
     }
 }
@@ -122,6 +122,7 @@ mod tests {
     use super::CageSolver;
     use crate::config::{Config, ConfigDescriptor};
     use crate::rules::{Cages, Rules};
+    use crate::solving::Reporter;
     use crate::{AdvanceResult, EntrySolver, State, Sudoku};
 
     #[test]
@@ -145,10 +146,14 @@ mod tests {
             sudoku: Sudoku::from(
                 ".....8...........................................................................",
             ),
-            config: Config::new(config, None),
+            config: Config::new(config),
             ..Default::default()
         };
         let mut solver = CageSolver {};
-        assert!(matches!(solver.advance(&mut state), AdvanceResult::Advance));
+        let mut reporter = Reporter::default();
+        assert!(matches!(
+            solver.advance(&mut state, &mut reporter),
+            AdvanceResult::Advance
+        ));
     }
 }

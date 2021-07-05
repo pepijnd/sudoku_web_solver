@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
@@ -58,7 +60,10 @@ impl Entry {
                 let mut test_state = state.clone();
                 test_state.info.tech = tech;
                 let mut entry = Entry::from_state(test_state);
-                if !matches!(entry.advance(), AdvanceResult::Advance) {
+                if !matches!(
+                    entry.advance(&mut Reporter::default()),
+                    AdvanceResult::Advance
+                ) {
                     state.info.tech = Solver::Invalid;
                     state.info.push_state();
                     return Entry::from_state(state);
@@ -94,9 +99,9 @@ impl Entry {
         }
     }
 
-    pub fn advance(&mut self) -> AdvanceResult {
+    pub fn advance(&mut self, reporter: &mut Reporter) -> AdvanceResult {
         self.state.info.tech = self.solver;
-        self.entry.advance(&mut self.state)
+        self.entry.advance(&mut self.state, reporter)
     }
 
     pub fn verified(&self) -> bool {
@@ -350,17 +355,14 @@ pub struct Info {
     pub solved: bool,
     pub correct: bool,
     pub valid: bool,
-    pub depth: usize,
-
-    pub progress: Vec<(u32, u32)>,
-    pub total: Option<u32>,
+    pub depth: u32,
+    pub splits: u32,
 }
 
 impl Info {
     pub fn reset(&mut self) {
         self.mods = Vec::new();
         self.change = false;
-        self.total = None;
     }
 
     pub fn push_mod(&mut self, m: StateMod) {
@@ -384,16 +386,66 @@ impl Default for Info {
             correct: true,
             valid: true,
             depth: 0,
-
-            progress: Vec::new(),
-            total: None,
+            splits: 1,
         }
     }
 }
 
-pub trait SolverExt {
-    fn as_cloned_box(&self) -> Box<dyn EntrySolver>;
-    fn as_any(&self) -> &dyn std::any::Any;
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
-    fn typename(&self) -> &str;
+#[derive(Debug)]
+pub struct Progress {
+    retries: u32,
+    splits: u32,
+}
+
+pub struct Reporter {
+    progress: Vec<Progress>,
+    on_progress: Option<Box<dyn FnMut(f64) + 'static>>,
+}
+
+impl Debug for Reporter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Reporter").finish_non_exhaustive()
+    }
+}
+
+impl Default for Reporter {
+    fn default() -> Self {
+        Self {
+            progress: Vec::new(),
+            on_progress: None,
+        }
+    }
+}
+
+impl Reporter {
+    pub fn new(on_progress: Box<dyn FnMut(f64)>) -> Self {
+        Self {
+            on_progress: Some(on_progress),
+            ..Default::default()
+        }
+    }
+
+    pub fn progress(&mut self, retries: u32, splits: u32) {
+        if let Some(callback) = self.on_progress.as_mut() {
+            let mut updated = false;
+            self.progress.drain_filter(|p| match p.splits.cmp(&splits) {
+                std::cmp::Ordering::Less => false,
+                std::cmp::Ordering::Equal => {
+                    p.retries = retries;
+                    updated = true;
+                    false
+                }
+                std::cmp::Ordering::Greater => true,
+            });
+            if !updated {
+                self.progress.push(Progress { retries, splits });
+            }
+            let mut progress = 0.0;
+            for p in &self.progress {
+                // dbg!(p.retries, p.splits);
+                progress += p.retries as f64 / p.splits as f64;
+            }
+            callback(progress);
+        }
+    }
 }

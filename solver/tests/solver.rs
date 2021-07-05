@@ -55,13 +55,13 @@ static INPUT: &[(&str, &str)] = &[
 #[test]
 fn solver_solve() {
     for (_i, &(sudoku, solution)) in INPUT.iter().enumerate() {
-        let solve = Sudoku::from(sudoku).solve(Some(Config::new(
-            ConfigDescriptor {
+        let solve = Sudoku::from(sudoku).solve(
+            Some(Config::new(ConfigDescriptor {
                 target: Target::Sudoku,
                 ..Default::default()
-            },
+            })),
             None,
-        )));
+        );
         if let SolveResult::Solution(solve) = solve {
             assert_eq!(Sudoku::from(solution), solve);
         } else {
@@ -73,13 +73,13 @@ fn solver_solve() {
 #[test]
 fn solver_steps() {
     for &(sudoku, _solution) in INPUT {
-        let solve = Sudoku::from(sudoku).solve(Some(Config::new(
-            ConfigDescriptor {
+        let solve = Sudoku::from(sudoku).solve(
+            Some(Config::new(ConfigDescriptor {
                 target: Target::Steps,
                 ..Default::default()
-            },
+            })),
             None,
-        )));
+        );
         if let SolveResult::Steps(solve) = solve {
             assert!(solve.end().valid, "Solution should be valid");
             assert_eq!(
@@ -120,7 +120,7 @@ fn solver_cages() {
         ..Default::default()
     };
     config.add_rules_solvers();
-    let solve = sudoku.solve(Some(Config::new(config, None)));
+    let solve = sudoku.solve(Some(Config::new(config)), None);
     if let SolveResult::Solution(_) = solve {
         // TODO: check for valid solution
     } else {

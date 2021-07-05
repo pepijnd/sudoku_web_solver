@@ -1,5 +1,5 @@
 use crate::options::OptionPair;
-use crate::solving::{CellMod, StateMod};
+use crate::solving::{CellMod, Reporter, StateMod};
 use crate::util::SetDomain;
 use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State};
 
@@ -7,7 +7,7 @@ use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State};
 pub struct XYWingSolver;
 
 impl EntrySolver for XYWingSolver {
-    fn advance(&mut self, state: &mut State) -> AdvanceResult {
+    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
         for row in 0..9 {
             for col in 0..9 {
                 let cell = Cell::new(row, col);

@@ -1,4 +1,4 @@
-use crate::solving::{CellMod, ModMarking, StateMod};
+use crate::solving::{CellMod, ModMarking, Reporter, StateMod};
 use crate::util::Domain;
 use crate::{AdvanceResult, Cell, EntrySolver, State};
 
@@ -6,7 +6,7 @@ use crate::{AdvanceResult, Cell, EntrySolver, State};
 pub struct SingleSolver;
 
 impl EntrySolver for SingleSolver {
-    fn advance(&mut self, state: &mut State) -> AdvanceResult {
+    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
         for d in 0..9 {
             Self::test(Domain::Row(d), state);
             Self::test(Domain::Col(d), state);

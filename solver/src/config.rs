@@ -1,4 +1,4 @@
-use std::num::NonZeroUsize;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 
 use crate::rules::Rules;
@@ -27,14 +27,13 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn new(desc: ConfigDescriptor, _callback: Option<Callback>) -> Config {
+    pub fn new(desc: ConfigDescriptor) -> Config {
         Config {
             inner: Arc::new(desc),
         }
     }
 }
 
-type Callback = Box<dyn Fn(&[(u32, u32)])>;
 #[derive(Debug, Clone)]
 pub struct ConfigDescriptor {
     pub base: Solver,
@@ -42,7 +41,7 @@ pub struct ConfigDescriptor {
     pub fallback: Option<Solver>,
     pub rules: Rules,
     pub target: Target,
-    pub max_threading_depth: Option<NonZeroUsize>,
+    pub max_splits: Option<NonZeroU32>,
 }
 
 impl std::fmt::Debug for Config {
@@ -70,7 +69,7 @@ impl Default for ConfigDescriptor {
             fallback: Some(Solver::BackTrace),
             rules: Rules::default(),
             target: Target::Steps,
-            max_threading_depth: None,
+            max_splits: None,
         }
     }
 }

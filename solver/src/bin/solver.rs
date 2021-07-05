@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Ok(input) = input {
                 if input.len() == 81 {
                     let sudoku = Sudoku::from(input);
-                    let _solve = sudoku.solve(None);
+                    let _solve = sudoku.solve(None, None);
                     let _ = sum += 1;
                     // if let Some(step) = solve.iter().last() {
                     //     sum += step.guesses_t;
