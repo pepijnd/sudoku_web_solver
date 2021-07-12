@@ -143,7 +143,7 @@ impl EntrySolver for Backtrace {
                 state.info.backtrace().cell.replace(cell);
                 state.info.backtrace().options = state.cell_options(cell);
                 state.info.backtrace().orig = Some(state.options);
-                state.info.entry.splits *= state.info.backtrace().options.len() as u32;
+                state.info.entry.splits *= state.info.backtrace().options.len() as u64;
             } else {
                 return AdvanceResult::Invalid;
             }
@@ -153,24 +153,15 @@ impl EntrySolver for Backtrace {
             .backtrace()
             .cell
             .expect("target cell should be set at this point");
-        state.options = state
-            .info
-            .backtrace()
-            .orig
-            .expect("orignal options should be set at this point");
         if let Some(max_splits) = config.max_splits {
             if state.info.entry.splits < max_splits.get() {
                 let mut jobs = Vec::new();
                 let cell_options = state.info.backtrace().options;
                 for value in cell_options.iter() {
                     let mods = StateMod::from_change(state.info.entry.tech, cell, value);
-                    let mut state = State {
-                        sudoku: state.sudoku,
-                        options: state.options,
-                        info: state.info.clone(),
-                        caches: state.caches.clone(),
-                    };
+                    let mut state = state.clone();
                     state.info.push_mod(mods);
+                    state.info.backtrace().job = true;
                     state.set_digit(cell, value);
                     state.info.entry.depth += 1;
                     jobs.push(Entry {
@@ -186,6 +177,11 @@ impl EntrySolver for Backtrace {
 
         if let Some(value) = state.info.backtrace().options.take() {
             state.info.backtrace().retries += 1;
+            state.options = state
+            .info
+            .backtrace()
+            .orig
+            .expect("orignal options should be set at this point");
             state.set_digit(cell, value);
             let mods = StateMod::from_change(state.info.entry.tech, cell, value);
             state.info.push_mod(mods);

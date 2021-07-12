@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::num::NonZeroU64;
 
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +13,7 @@ pub struct Config {
     pub fallback: Option<Solver>,
     pub rules: Rules,
     pub target: Target,
-    pub max_splits: Option<NonZeroU32>,
+    pub max_splits: Option<NonZeroU64>,
 }
 
 impl std::fmt::Debug for Config {

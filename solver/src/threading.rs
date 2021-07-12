@@ -81,14 +81,11 @@ impl Runner {
                 break;
             }
             let mut progress = { *self.global.lock().unwrap() };
-            // for job in self.queue.lock().unwrap().iter() {
-            //     progress += job.retries.load(Ordering::Acquire) as f64 / (job.size * job.splits) as f64;
-            // }
             for p in self.progress.iter() {
                 progress += *p.lock().unwrap();
             }
             if progress > reported + 0.0005 {
-                eprintln!("{:.2}%", progress.powi(8) * 100.0);
+                eprintln!("{:.2}%", progress * 100.0);
                 reported = progress;
             }
             std::thread::sleep(std::time::Duration::from_millis(1));
@@ -177,7 +174,7 @@ impl Runner {
 pub struct SolveJobs {
     pub buffer: Buffer,
     pub jobs: Vec<Entry>,
-    pub split_depth: u32,
+    pub split_depth: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

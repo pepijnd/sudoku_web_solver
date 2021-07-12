@@ -382,7 +382,7 @@ pub struct EntryInfo {
     pub correct: bool,
     pub valid: bool,
     pub depth: u32,
-    pub splits: u32,
+    pub splits: u64,
 }
 
 impl Default for EntryInfo {
@@ -448,7 +448,7 @@ impl Default for Info {
 #[derive(Debug)]
 pub struct Progress {
     retries: u32,
-    splits: u32,
+    splits: u64,
 }
 
 pub struct Reporter {
@@ -479,7 +479,7 @@ impl Reporter {
         }
     }
 
-    pub fn progress(&mut self, retries: u32, splits: u32) {
+    pub fn progress(&mut self, retries: u32, splits: u64) {
         if let Some(callback) = self.on_progress.as_mut() {
             let mut updated = false;
             self.progress.drain_filter(|p| match p.splits.cmp(&splits) {
