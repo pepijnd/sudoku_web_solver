@@ -18,7 +18,7 @@ alloc = ["wee_alloc"]
 
 [dependencies]
 solver = { version="0.1.0", path="../solver" }
-webelements = "0.1.1"
+webelements = { version="0.1.2", path="../../webelements/webelements" }
 
 js-sys = "0.3.50"
 lazy_static = "1.4.0"

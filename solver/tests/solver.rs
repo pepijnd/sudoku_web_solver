@@ -1,4 +1,4 @@
-use solver::config::{Config, ConfigDescriptor};
+use solver::config::Config;
 use solver::rules::Rules;
 use solver::solvers::Solver;
 use solver::solving::Target;
@@ -56,12 +56,13 @@ static INPUT: &[(&str, &str)] = &[
 fn solver_solve() {
     for (_i, &(sudoku, solution)) in INPUT.iter().enumerate() {
         let solve = Sudoku::from(sudoku).solve(
-            Some(Config::new(ConfigDescriptor {
+            &Config {
                 target: Target::Sudoku,
                 ..Default::default()
-            })),
+            },
             None,
         );
+        dbg!(&solve);
         if let SolveResult::Solution(solve) = solve {
             assert_eq!(Sudoku::from(solution), solve);
         } else {
@@ -74,10 +75,10 @@ fn solver_solve() {
 fn solver_steps() {
     for &(sudoku, _solution) in INPUT {
         let solve = Sudoku::from(sudoku).solve(
-            Some(Config::new(ConfigDescriptor {
+            &Config {
                 target: Target::Steps,
                 ..Default::default()
-            })),
+            },
             None,
         );
         if let SolveResult::Steps(solve) = solve {
@@ -114,13 +115,13 @@ fn solver_cages() {
 
     let rules = Rules { cages };
 
-    let mut config = ConfigDescriptor {
+    let mut config = Config {
         rules,
         target: Target::Sudoku,
         ..Default::default()
     };
     config.add_rules_solvers();
-    let solve = sudoku.solve(Some(Config::new(config)), None);
+    let solve = sudoku.solve(&config, None);
     if let SolveResult::Solution(_) = solve {
         // TODO: check for valid solution
     } else {

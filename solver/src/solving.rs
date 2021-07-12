@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
 use crate::util::Domain;
-use crate::{Cell, CellOptions, EntrySolver, Options, Solver, Sudoku};
+use crate::{Cell, CellOptions, Options, Solver, Sudoku};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Solution {
@@ -20,96 +20,91 @@ pub enum AdvanceResult {
     Split(Vec<Entry>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entry {
     pub state: State,
     pub solver: Solver,
-    pub entry: Box<dyn EntrySolver>,
 }
 
 impl Entry {
-    pub fn new(sudoku: Sudoku, options: Options, tech: Solver, config: Config) -> Self {
+    pub fn new(sudoku: Sudoku, options: Options, tech: Solver) -> Self {
         Self {
             state: State {
                 sudoku,
                 options,
-                info: Info::default(),
-                config,
+                ..Default::default()
             },
             solver: tech,
-            entry: tech.make(),
         }
     }
 
     pub fn from_state(state: State) -> Self {
-        let entry = state.info.tech.make();
-        let tech = state.info.tech;
+        let tech = state.info.entry.tech;
         Self {
             state,
             solver: tech,
-            entry,
         }
     }
 
-    pub fn make_next(&self) -> Entry {
+    pub fn make_next(&self, config: &Config) -> Entry {
         let mut state = self.state.clone();
         state.info.reset();
 
-        if self.info.solved {
-            for &tech in &state.config.solvers {
+        if self.info.entry.solved {
+            for tech in &config.solvers {
                 let mut test_state = state.clone();
-                test_state.info.tech = tech;
+                test_state.info.entry.tech = *tech;
                 let mut entry = Entry::from_state(test_state);
                 if !matches!(
-                    entry.advance(&mut Reporter::default()),
+                    entry.advance(config, &mut Reporter::default()),
                     AdvanceResult::Advance
                 ) {
-                    state.info.tech = Solver::Invalid;
+                    state.info.entry.tech = Solver::Invalid;
                     state.info.push_state();
                     return Entry::from_state(state);
                 }
             }
-            state.info.tech = Solver::Solved;
+            state.info.entry.tech = Solver::Solved;
             state.info.push_state();
             return Entry::from_state(state);
         }
 
-        if self.info.change {
-            state.info.tech = self.config.base;
+        if self.info.entry.change {
+            state.info.entry.tech = config.base;
             return Entry::from_state(state);
         }
 
         let mut next = false;
-        for &tech in self.config.solvers.iter() {
-            if self.solver == self.config.base || next {
-                state.info.tech = tech;
+        for &tech in config.solvers.iter() {
+            if self.solver == config.base || next {
+                state.info.entry.tech = tech;
                 return Entry::from_state(state);
             } else if tech == self.solver {
                 next = true;
             }
         }
 
-        if let Some(tech) = self.config.fallback {
-            state.info.tech = tech;
+        if let Some(tech) = config.fallback {
+            state.info.entry.tech = tech;
             Entry::from_state(state)
         } else {
-            state.info.tech = Solver::Incomplete;
+            state.info.entry.tech = Solver::Incomplete;
             state.info.push_state();
             Entry::from_state(state)
         }
     }
 
-    pub fn advance(&mut self, reporter: &mut Reporter) -> AdvanceResult {
-        self.state.info.tech = self.solver;
-        self.entry.advance(&mut self.state, reporter)
+    pub fn advance(&mut self, config: &Config, reporter: &mut Reporter) -> AdvanceResult {
+        self.state.info.entry.tech = self.solver;
+        self.solver.advance(&mut self.state, config, reporter)
     }
 
-    pub fn verified(&self) -> bool {
-        self.entry.verified()
+    pub fn verified(&self, state: &State) -> bool {
+        self.solver.verified(state)
     }
 
     pub fn terminate(&self) -> bool {
-        self.entry.terminate()
+        self.solver.terminate()
     }
 }
 
@@ -307,19 +302,47 @@ impl ModTarget {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Target {
     Sudoku,
     Steps,
     List,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BacktraceInfo {
+    pub cell: Option<Cell>,
+    pub options: CellOptions,
+    pub retries: u32,
+    pub job: bool,
+}
+
+impl Default for BacktraceInfo {
+    fn default() -> Self {
+        Self {
+            cell: None,
+            options: CellOptions::default(),
+            retries: 0,
+            job: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Caches {}
+
+impl Default for Caches {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct State {
     pub sudoku: Sudoku,
     pub options: Options,
     pub info: Info,
-    pub config: Config,
+    pub caches: Caches,
 }
 
 impl State {
@@ -337,19 +360,18 @@ impl State {
 }
 
 impl Default for State {
-    fn default() -> Self {
+    fn default() -> State {
         Self {
             sudoku: Default::default(),
             options: Default::default(),
             info: Default::default(),
-            config: Default::default(),
+            caches: Caches::default(),
         }
     }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Info {
-    pub mods: Vec<StateMod>,
+pub struct EntryInfo {
     pub change: bool,
     pub tech: Solver,
     pub solved: bool,
@@ -359,27 +381,9 @@ pub struct Info {
     pub splits: u32,
 }
 
-impl Info {
-    pub fn reset(&mut self) {
-        self.mods = Vec::new();
-        self.change = false;
-    }
-
-    pub fn push_mod(&mut self, m: StateMod) {
-        self.mods.push(m);
-        self.change = true;
-    }
-
-    pub fn push_state(&mut self) {
-        self.mods.push(StateMod::from(self.tech));
-        self.change = true;
-    }
-}
-
-impl Default for Info {
+impl Default for EntryInfo {
     fn default() -> Self {
         Self {
-            mods: Vec::new(),
             change: false,
             tech: Solver::Init,
             solved: false,
@@ -387,6 +391,52 @@ impl Default for Info {
             valid: true,
             depth: 0,
             splits: 1,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Info {
+    pub mods: Vec<StateMod>,
+    pub backtrace: Option<BacktraceInfo>,
+    pub entry: EntryInfo,
+}
+
+impl Info {
+    pub fn reset(&mut self) {
+        self.mods = Vec::new();
+        self.backtrace = None;
+        self.entry.change = false;
+    }
+
+    pub fn push_mod(&mut self, m: StateMod) {
+        self.mods.push(m);
+        self.entry.change = true;
+    }
+
+    pub fn push_state(&mut self) {
+        self.mods.push(StateMod::from(self.entry.tech));
+        self.entry.change = true;
+    }
+
+    pub fn backtrace(&mut self) -> &mut BacktraceInfo {
+        if self.backtrace.is_none() {
+            self.backtrace.replace(BacktraceInfo::default());
+        }
+        if let Some(info) = self.backtrace.as_mut() {
+            info
+        } else {
+            unreachable!()
+        }
+    }
+}
+
+impl Default for Info {
+    fn default() -> Self {
+        Self {
+            mods: Vec::new(),
+            backtrace: None,
+            entry: EntryInfo::default(),
         }
     }
 }

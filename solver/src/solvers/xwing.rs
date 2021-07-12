@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::solving::{CellMod, Reporter, StateMod};
 use crate::util::SetDomain;
 use crate::{AdvanceResult, EntrySolver, State};
@@ -42,7 +43,7 @@ impl RowSet {
 pub struct XWingSolver;
 
 impl EntrySolver for XWingSolver {
-    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
+    fn advance(state: &mut State, config: &Config, _reporter: &mut Reporter) -> AdvanceResult {
         for nr in 1..=9 {
             Self::test(SetDomain::Row, nr, state);
             Self::test(SetDomain::Col, nr, state);
@@ -83,7 +84,7 @@ impl XWingSolver {
 
     fn xwing(d: SetDomain, value: u8, first: RowSet, second: RowSet, state: &mut State) {
         let d = d.other();
-        let mut mods = StateMod::from(state.info.tech);
+        let mut mods = StateMod::from(state.info.entry.tech);
         for i in 0..9 {
             if i == first.row || i == second.row {
                 continue;

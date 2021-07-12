@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::Config;
 use crate::output::ser_array::a81;
 use crate::output::Solve;
-use crate::rules::Rules;
-use crate::solving::{Entry, Info, Reporter, Target};
+use crate::solving::{Entry, EntryInfo, Reporter, Target};
 use crate::threading::SolveJobs;
 use crate::util::Domain;
 use crate::{AdvanceResult, Cell, Options, Solver};
@@ -26,11 +25,10 @@ pub struct Sudoku {
 }
 
 impl Sudoku {
-    pub fn solve(self, config: Option<Config>, reporter: Option<Reporter>) -> SolveResult {
+    pub fn solve(self, config: &Config, reporter: Option<Reporter>) -> SolveResult {
         let reporter = reporter.unwrap_or_default();
-        let config = config.unwrap_or_default();
-        let buffer = Buffer::new(self, config);
-        buffer.solve(reporter)
+        let buffer = Buffer::new(self);
+        buffer.solve(config, reporter)
     }
 
     pub fn cell(&self, cell: Cell) -> &u8 {
@@ -157,59 +155,56 @@ impl<'a> Iterator for SudokuIter<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Buffer {
     buffer: Vec<Entry>,
-    pub rules: Rules,
 }
 
 impl Buffer {
-    pub fn new(sudoku: Sudoku, config: Config) -> Self {
+    pub fn new(sudoku: Sudoku) -> Self {
         let mut buffer = Vec::with_capacity(32);
-        let rules = config.rules.clone();
-        let state = Entry::new(sudoku, Options::default(), Solver::Init, config);
+        let state = Entry::new(sudoku, Options::default(), Solver::Init);
         buffer.push(state);
-        Self { buffer, rules }
+        Self { buffer }
     }
 
-    pub fn solve(mut self, mut reporter: Reporter) -> SolveResult {
+    pub fn solve(mut self, config: &Config, mut reporter: Reporter) -> SolveResult {
         let mut solutions = Vec::new();
         loop {
             let entry = self.get().unwrap();
-            let config = entry.config.clone();
             if
             /*config.canceled() ||*/
             solutions.len() > 1000 {
-                match entry.config.target {
+                match config.target {
                     Target::Sudoku => {
                         return SolveResult::Incomplete(entry.sudoku);
                     }
-                    Target::Steps => return SolveResult::Steps(Box::new(Solve::from(self))),
+                    Target::Steps => return SolveResult::Steps(Box::new(Solve::from_buffer(self))),
                     Target::List => return SolveResult::List(solutions),
                 }
             }
-            match entry.advance(&mut reporter) {
+            match entry.advance(config, &mut reporter) {
                 AdvanceResult::Advance => {
-                    let next = entry.make_next();
+                    let next = entry.make_next(config);
                     let entry = self.push(next).unwrap();
                     if entry.terminate() {
                         match config.target {
                             Target::Sudoku => {
-                                return match entry.info {
-                                    Info { valid: false, .. } => SolveResult::Invalid,
-                                    Info { solved: true, .. } => {
+                                return match entry.info.entry {
+                                    EntryInfo { valid: false, .. } => SolveResult::Invalid,
+                                    EntryInfo { solved: true, .. } => {
                                         SolveResult::Solution(entry.sudoku)
                                     }
-                                    Info { solved: false, .. } => {
+                                    EntryInfo { solved: false, .. } => {
                                         SolveResult::Incomplete(entry.sudoku)
                                     }
                                 }
                             }
                             Target::Steps => {
-                                return SolveResult::Steps(Box::new(Solve::from(self)))
+                                return SolveResult::Steps(Box::new(Solve::from_buffer(self)))
                             }
                             Target::List => {
-                                if entry.info.valid && entry.info.solved {
+                                if entry.info.entry.valid && entry.info.entry.solved {
                                     solutions.push(entry.sudoku)
                                 }
                             }
@@ -220,11 +215,11 @@ impl Buffer {
                     let mut last_known = None;
                     loop {
                         let old = self.pop().unwrap();
-                        if last_known.is_none() && old.info.correct {
+                        if last_known.is_none() && old.info.entry.correct {
                             last_known = Some(self.clone());
                         }
                         if let Some(entry) = self.get() {
-                            if !entry.verified() {
+                            if !entry.verified(&entry.state) {
                                 break;
                             };
                         } else {
@@ -238,11 +233,12 @@ impl Buffer {
                                 }
                                 Target::Steps => {
                                     if let Some(last) = last_known {
-                                        return SolveResult::Steps(Box::new(Solve::from(last)));
+                                        return SolveResult::Steps(Box::new(Solve::from_buffer(
+                                            last,
+                                        )));
                                     } else {
                                         return SolveResult::Steps(Box::new(Solve::invalid(
                                             old.sudoku,
-                                            self.rules.clone(),
                                         )));
                                     }
                                 }
@@ -252,7 +248,7 @@ impl Buffer {
                     }
                 }
                 AdvanceResult::Split(jobs) => {
-                    let split_depth = entry.info.splits;
+                    let split_depth = entry.info.entry.splits;
                     self.pop();
                     return SolveResult::Jobs(Box::new(SolveJobs {
                         buffer: self,
@@ -284,14 +280,14 @@ impl Buffer {
 
 #[cfg(test)]
 mod test {
-    use crate::Sudoku;
+    use crate::{config::Config, Sudoku};
 
     #[test]
     fn sudoku_solve_all() {
         let sudoku = Sudoku::from(
             "....27....1...4.....9..57...8....3..5..9..1......32...6.1....4...8....9.....4.6.5",
         );
-        let _solutions = sudoku.solve(None, None);
+        let _solutions = sudoku.solve(&Config::default(), None);
         // assert_eq!(solutions.len(), 235);
     }
 }

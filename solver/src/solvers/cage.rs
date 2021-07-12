@@ -1,5 +1,6 @@
 use smallvec::SmallVec;
 
+use crate::config::Config;
 use crate::solving::{CellMod, Reporter, StateMod};
 use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State};
 
@@ -7,8 +8,8 @@ use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State};
 pub struct CageSolver;
 
 impl EntrySolver for CageSolver {
-    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
-        Self::test(state)
+    fn advance(state: &mut State, config: &Config, _reporter: &mut Reporter) -> AdvanceResult {
+        Self::test(state, config)
     }
 }
 
@@ -19,8 +20,8 @@ enum CellState {
 }
 
 impl CageSolver {
-    fn test(state: &mut State) -> AdvanceResult {
-        let cages = state.config.rules.cages.clone();
+    fn test(state: &mut State, config: &Config) -> AdvanceResult {
+        let cages = config.rules.cages.clone();
 
         for (cage, &total) in cages.cages.iter().enumerate() {
             let mut cage_cells: SmallVec<[(Cell, CellState); 9]> = SmallVec::new();
@@ -95,7 +96,7 @@ impl CageSolver {
                     valid = false;
                 }
             }
-            let mut mods = StateMod::from(state.info.tech);
+            let mut mods = StateMod::from(state.info.entry.tech);
             for &(cell, options) in &sums {
                 for i in 1..=9 {
                     if !options.has(i) && state.remove(cell, i) {
@@ -120,14 +121,14 @@ impl Default for CageSolver {
 #[cfg(test)]
 mod tests {
     use super::CageSolver;
-    use crate::config::{Config, ConfigDescriptor};
+    use crate::config::Config;
     use crate::rules::{Cages, Rules};
     use crate::solving::Reporter;
     use crate::{AdvanceResult, EntrySolver, State, Sudoku};
 
     #[test]
     fn test() {
-        let mut config = ConfigDescriptor {
+        let mut config = Config {
             rules: Rules {
                 cages: Cages {
                     cages: vec![20, 27, 26, 24, 28, 17, 18, 30, 16, 24],
@@ -146,13 +147,11 @@ mod tests {
             sudoku: Sudoku::from(
                 ".....8...........................................................................",
             ),
-            config: Config::new(config),
             ..Default::default()
         };
-        let mut solver = CageSolver {};
         let mut reporter = Reporter::default();
         assert!(matches!(
-            solver.advance(&mut state, &mut reporter),
+            CageSolver::advance(&mut state, &config, &mut reporter),
             AdvanceResult::Advance
         ));
     }

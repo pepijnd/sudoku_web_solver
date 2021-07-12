@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
+use solver::config::Config;
 use solver::Sudoku;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -14,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Ok(input) = input {
                 if input.len() == 81 {
                     let sudoku = Sudoku::from(input);
-                    let _solve = sudoku.solve(None, None);
+                    let _solve = sudoku.solve(&Config::default(), None);
                     let _ = sum += 1;
                     // if let Some(step) = solve.iter().last() {
                     //     sum += step.guesses_t;

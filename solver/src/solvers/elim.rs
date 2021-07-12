@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::solving::{CellMod, Reporter, StateMod};
 use crate::util::SetDomain;
 use crate::{AdvanceResult, Cell, EntrySolver, State};
@@ -6,7 +7,7 @@ use crate::{AdvanceResult, Cell, EntrySolver, State};
 pub struct ElimSolver;
 
 impl EntrySolver for ElimSolver {
-    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
+    fn advance(state: &mut State, config: &Config, _reporter: &mut Reporter) -> AdvanceResult {
         for value in 1..=9 {
             for i in 0..9 {
                 Self::test_sqr(i, value, state);
@@ -22,7 +23,7 @@ impl ElimSolver {
     fn test_sqr(sqr: usize, value: u8, state: &mut State) {
         let mut row = None;
         let mut col = None;
-        let mut mods = StateMod::from(state.info.tech);
+        let mut mods = StateMod::from(state.info.entry.tech);
 
         for i in 0..9 {
             let cell = Cell::from_sqr(sqr, i);
@@ -86,7 +87,7 @@ impl ElimSolver {
 
     fn test(n: usize, d: SetDomain, value: u8, state: &mut State) {
         let mut sqr = None;
-        let mut mods = StateMod::from(state.info.tech);
+        let mut mods = StateMod::from(state.info.entry.tech);
 
         for i in 0..9 {
             let cell = d.cell(n, i);

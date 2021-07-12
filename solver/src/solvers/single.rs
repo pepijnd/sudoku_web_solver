@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::solving::{CellMod, ModMarking, Reporter, StateMod};
 use crate::util::Domain;
 use crate::{AdvanceResult, Cell, EntrySolver, State};
@@ -6,7 +7,7 @@ use crate::{AdvanceResult, Cell, EntrySolver, State};
 pub struct SingleSolver;
 
 impl EntrySolver for SingleSolver {
-    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
+    fn advance(state: &mut State, config: &Config, _reporter: &mut Reporter) -> AdvanceResult {
         for d in 0..9 {
             Self::test(Domain::Row(d), state);
             Self::test(Domain::Col(d), state);
@@ -25,7 +26,7 @@ enum Found {
 
 impl SingleSolver {
     fn test(domain: Domain, state: &mut State) {
-        let mut mods = StateMod::from(state.info.tech);
+        let mut mods = StateMod::from(state.info.entry.tech);
         mods.push_mark(ModMarking::Domain(domain));
 
         let options = (0..9)

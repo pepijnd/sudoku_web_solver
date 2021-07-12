@@ -32,7 +32,6 @@ impl Worker {
         worker.scope.set_onmessage(move |value| {
             worker_ref.on_message(value);
         })?;
-        worker.post_message(JsValue::from_str("hi from worker"))?;
         Ok(worker)
     }
 }

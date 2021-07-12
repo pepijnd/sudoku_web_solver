@@ -1,6 +1,6 @@
 #![feature(duration_constants)]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use solver::config::{Config, ConfigDescriptor};
+use solver::config::Config;
 use solver::rules::{Cages, Rules};
 use solver::Sudoku;
 
@@ -25,7 +25,7 @@ fn solver_benchmark(c: &mut Criterion) {
     for (i, (input, _)) in INPUT.iter().enumerate() {
         group.bench_with_input(format!("sudoku_{:?}", i), input, |b, i| {
             let s = Sudoku::from(*i);
-            b.iter(|| black_box(&s.clone()).solve(None, None))
+            b.iter(|| black_box(&s.clone()).solve(&Config::default(), None))
         });
     }
 
@@ -40,7 +40,7 @@ fn killer_benchmark(c: &mut Criterion) {
     );
 
     group.bench_function("sudoku", |b| {
-        let mut config = ConfigDescriptor {
+        let mut config = Config {
             rules: Rules {
                 cages: Cages {
                     cages: vec![
@@ -59,9 +59,8 @@ fn killer_benchmark(c: &mut Criterion) {
             ..Default::default()
         };
         config.add_rules_solvers();
-        let config = Config::new(config);
         b.iter(|| {
-            black_box(sudoku.solve(Some(config.clone()), None));
+            black_box(sudoku.solve(&config, None));
         })
     });
 

@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::options::OptionPair;
 use crate::solving::{CellMod, Reporter, StateMod};
 use crate::util::SetDomain;
@@ -7,7 +8,7 @@ use crate::{AdvanceResult, Cell, CellOptions, EntrySolver, State};
 pub struct XYWingSolver;
 
 impl EntrySolver for XYWingSolver {
-    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
+    fn advance(state: &mut State, config: &Config, _reporter: &mut Reporter) -> AdvanceResult {
         for row in 0..9 {
             for col in 0..9 {
                 let cell = Cell::new(row, col);
@@ -68,7 +69,7 @@ impl XYWingSolver {
         if matching.sees(other) || value == common {
             return;
         }
-        let mut mods = StateMod::from(state.info.tech);
+        let mut mods = StateMod::from(state.info.entry.tech);
         for d in &[SetDomain::Row, SetDomain::Col, SetDomain::Sqr] {
             for i in 0..9 {
                 let elim = d.matching(matching, i);

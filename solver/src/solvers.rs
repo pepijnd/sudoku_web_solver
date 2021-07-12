@@ -11,7 +11,8 @@ pub use self::{
     xwing::XWingSolver,
     xywing::XYWingSolver,
 };
-use crate::EntrySolver;
+
+use crate::{AdvanceResult, Config, EntrySolver, Reporter, State};
 
 mod base;
 mod cage;
@@ -21,51 +22,81 @@ mod single;
 mod xwing;
 mod xywing;
 
-#[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub enum Solver {
-    Init,
-    NoOp,
-    BackTrace,
-    Base,
-    Cage,
-    Single,
-    Elim,
-    Set,
-    XWing,
-    XYWing,
-    Invalid,
-    Incomplete,
-    Solved,
-}
-
-impl Default for Solver {
-    fn default() -> Self {
-        Self::Init
-    }
-}
-
-impl Solver {
-    pub fn make(&self) -> Box<dyn EntrySolver> {
-        match self {
-            Solver::Init => Box::new(StateInit::default()),
-            Solver::NoOp => Box::new(StateNoOp::default()),
-            Solver::BackTrace => Box::new(Backtrace::default()),
-            Solver::Base => Box::new(BaseSolver::default()),
-            Solver::Cage => Box::new(CageSolver::default()),
-            Solver::Single => Box::new(SingleSolver::default()),
-            Solver::Elim => Box::new(ElimSolver::default()),
-            Solver::Set => Box::new(SetSolver::default()),
-            Solver::XWing => Box::new(XWingSolver::default()),
-            Solver::XYWing => Box::new(XYWingSolver::default()),
-            Solver::Incomplete => Box::new(StateIncomplete::default()),
-            Solver::Invalid => Box::new(StateInvalid::default()),
-            Solver::Solved => Box::new(StateSolved::default()),
+macro_rules! solver {
+    {
+        $vis:vis $name:ident {
+            $var_init:ident => $solver_init:ident
+            $(,$var:ident => $solver:ident)*$(,)?
         }
-    }
+    } => {
+        #[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
+        $vis enum $name {
+            $var_init,
+            $($var),*
+        }
+
+        impl $name {
+            pub fn advance(
+                &self,
+                state: &mut State,
+                config: &Config,
+                reporter: &mut Reporter
+            ) -> AdvanceResult {
+                match self {
+                    Self::$var_init => {<$solver_init as EntrySolver>::advance(state, config, reporter)},
+                    $(Self::$var => {
+                        <$solver as EntrySolver>::advance(state, config, reporter)
+                    }),*
+                }
+            }
+
+            pub fn verified(&self, state: &State) -> bool {
+                match self {
+                    Self::$var_init => {<$solver_init as EntrySolver>::verified(state)},
+                    $(Self::$var => {
+                        <$solver as EntrySolver>::verified(state)
+                    }),*
+                }
+            }
+
+            pub fn terminate(&self) -> bool {
+                match self {
+                    Self::$var_init => {<$solver_init as EntrySolver>::terminate()},
+                    $(Self::$var => {
+                        <$solver as EntrySolver>::terminate()
+                    }),*
+                }
+            }
+        }
+
+        impl Default for $name {
+            fn default() -> Self {
+                Self::$var_init
+            }
+        }
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{:?}", self)
+            }
+        }
+    };
 }
 
-impl std::fmt::Display for Solver {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+solver! {
+    pub Solver {
+        Init => StateInit,
+        NoOp => StateNoOp,
+        BackTrace => Backtrace,
+        Base => BaseSolver,
+        Cage => CageSolver,
+        Single => SingleSolver,
+        Elim  => ElimSolver,
+        Set => SetSolver,
+        XWing => XWingSolver,
+        XYWing => XYWingSolver,
+        Invalid => StateInvalid,
+        Incomplete => StateIncomplete,
+        Solved => StateSolved,
     }
 }

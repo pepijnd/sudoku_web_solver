@@ -1,4 +1,8 @@
-use std::fmt::Display;
+use std::{
+    fmt::{Debug, Display},
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -124,6 +128,87 @@ impl SetDomain {
             SetDomain::Sqr => self.cell(c.sqr(), i),
             SetDomain::Row => self.cell(c.row, i),
             SetDomain::Col => self.cell(c.col, i),
+        }
+    }
+}
+
+pub enum CloneCell<T>
+where
+    T: Clone,
+{
+    Owned(T),
+    Cloned(Arc<T>),
+}
+
+impl<T> CloneCell<T>
+where
+    T: Clone + Sized,
+{
+    pub fn disown(&mut self) {
+        if matches!(self, Self::Cloned(_)) {
+            return;
+        }
+        unsafe {
+            let tmp = std::ptr::read(self);
+            if let Self::Owned(tmp) = tmp {
+                std::ptr::write(self, Self::Cloned(Arc::new(tmp)))
+            } else {
+                unreachable!()
+            }
+        }
+    }
+}
+
+impl<T> Debug for CloneCell<T>
+where
+    T: Debug + Clone,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        (&self).fmt(f)
+    }
+}
+
+impl<T> Deref for CloneCell<T>
+where
+    T: Clone,
+{
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            CloneCell::Owned(t) => t,
+            CloneCell::Cloned(t) => t,
+        }
+    }
+}
+
+impl<T> DerefMut for CloneCell<T>
+where
+    T: Clone,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            CloneCell::Owned(t) => t,
+            CloneCell::Cloned(_) => {
+                *self = self.clone();
+                if let Self::Owned(t) = self {
+                    t
+                } else {
+                    unreachable!()
+                }
+            }
+        }
+    }
+}
+
+impl<T> Clone for CloneCell<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        match self {
+            CloneCell::Owned(t) => Self::Cloned(Arc::new(t.clone())),
+            CloneCell::Cloned(t) => Self::Cloned(Arc::clone(t)),
         }
     }
 }

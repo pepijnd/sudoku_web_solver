@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::solving::{CellMod, Reporter, StateMod};
 use crate::util::SetDomain;
 use crate::{AdvanceResult, Cell, EntrySolver, State};
@@ -6,7 +7,7 @@ use crate::{AdvanceResult, Cell, EntrySolver, State};
 pub struct SetSolver;
 
 impl EntrySolver for SetSolver {
-    fn advance(&mut self, state: &mut State, _reporter: &mut Reporter) -> AdvanceResult {
+    fn advance(state: &mut State, config: &Config, _reporter: &mut Reporter) -> AdvanceResult {
         for domain in 0..9 {
             for cell in 0..9 {
                 Self::test(domain, cell, SetDomain::Sqr, state);
@@ -41,7 +42,7 @@ impl SetSolver {
         if len != set.len() || len < 2 {
             return;
         }
-        let mut mods = StateMod::from(state.info.tech);
+        let mut mods = StateMod::from(state.info.entry.tech);
         for other in 0..9 {
             let other = domain.cell(d, other);
             if set.contains(&other) || *state.sudoku.cell(other) != 0 {

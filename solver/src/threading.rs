@@ -1,10 +1,10 @@
-use std::num::NonZeroU32;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use crate::config::{Config, ConfigDescriptor};
-use crate::rules::Rules;
-use crate::solving::{Entry, Reporter, Target};
+use serde::{Deserialize, Serialize};
+
+use crate::config::Config;
+use crate::solving::{Entry, Reporter};
 use crate::sudoku::{Buffer, SolveResult};
 use crate::{Solver, Sudoku};
 
@@ -27,23 +27,15 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new(sudoku: Sudoku, rules: Rules) -> Self {
-        let mut config_desc = ConfigDescriptor {
-            rules,
-            target: Target::List,
-            max_splits: NonZeroU32::new(8 * 9 * 8),
-            ..Default::default()
-        };
-        config_desc.add_rules_solvers();
-        let config = Config::new(config_desc);
+    pub fn new(sudoku: Sudoku) -> Self {
         let mut queue = Vec::new();
-        let mut buffer = Buffer::new(sudoku, config);
+        let mut buffer = Buffer::new(sudoku);
         let mut state = buffer
             .get()
             .expect("buffer always starts with at least one entry")
             .state
             .clone();
-        state.info.tech = Solver::NoOp;
+        state.info.entry.tech = Solver::NoOp;
         queue.push(RunnerJobs {
             buffer,
             entries: vec![Entry::from_state(state)],
@@ -56,23 +48,24 @@ impl Runner {
             output: Default::default(),
             runners: Arc::new((0..8).map(|_| AtomicBool::new(true)).collect()),
             progress: Arc::new((0..8).map(|_| Arc::new(Mutex::new(0.0))).collect()),
-            global: Arc::new(Mutex::new(0.0))
+            global: Arc::new(Mutex::new(0.0)),
         }
     }
 
-    pub fn run(&self) -> Vec<Sudoku> {
+    pub fn run(&self, config: &Config) -> Vec<Sudoku> {
         let runners = self
             .runners
             .iter()
             .enumerate()
             .map(|(i, _)| {
                 let runner = self.clone();
+                let config = config.clone();
                 std::thread::spawn(move || {
                     let runner = Self {
                         id: Some(i),
                         ..runner
                     };
-                    runner.thread_run()
+                    runner.thread_run(&config)
                 })
             })
             .collect::<Vec<_>>();
@@ -87,7 +80,7 @@ impl Runner {
             if done {
                 break;
             }
-            let mut progress = {*self.global.lock().unwrap()};
+            let mut progress = { *self.global.lock().unwrap() };
             // for job in self.queue.lock().unwrap().iter() {
             //     progress += job.retries.load(Ordering::Acquire) as f64 / (job.size * job.splits) as f64;
             // }
@@ -106,9 +99,8 @@ impl Runner {
         self.output.lock().unwrap().clone()
     }
 
-    fn thread_run(&self) {
+    fn thread_run(&self, config: &Config) {
         let mut status = true;
-        let mut current = 1;
         let mut total = 1;
         loop {
             if let Some(job) = {
@@ -125,7 +117,6 @@ impl Runner {
                     }
                     let entry = job.entries.pop().unwrap();
                     let mut buffer = job.buffer.clone();
-                    current = job.size;
                     total = job.total;
                     buffer.push(entry);
                     Some(buffer)
@@ -134,9 +125,12 @@ impl Runner {
                 }
             } {
                 let progress = Arc::clone(&self.progress[self.id.unwrap()]);
-                match job.solve(Reporter::new(Box::new(move |p| {
-                    *progress.lock().unwrap() = p;
-                }))) {
+                match job.solve(
+                    config,
+                    Reporter::new(Box::new(move |p| {
+                        *progress.lock().unwrap() = p;
+                    })),
+                ) {
                     SolveResult::List(ref solutions) => {
                         let mut output = self.output.lock().unwrap();
                         output.extend_from_slice(solutions);
@@ -152,8 +146,7 @@ impl Runner {
                             size,
                         })
                     }
-                    _ => {
-                    }
+                    _ => {}
                 }
             } else {
                 if status {
@@ -185,4 +178,10 @@ pub struct SolveJobs {
     pub buffer: Buffer,
     pub jobs: Vec<Entry>,
     pub split_depth: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ThreadMessage {
+    Ready,
+    Job(Box<Buffer>),
 }

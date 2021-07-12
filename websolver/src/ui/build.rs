@@ -1,6 +1,6 @@
 use solver::{Solve, Sudoku};
 use wasm_bindgen::prelude::*;
-use webelements::{document, WebElementBuilder};
+use webelements::{document, WebElementBuilder, Worker};
 
 use super::controller::app::AppController;
 use super::view::app::AppElement;
@@ -11,6 +11,7 @@ use crate::util::{InitCell, Measure};
 pub struct App {
     controller: InitCell<AppController>,
     element: AppElement,
+    workers: InitCell<Vec<Worker>>,
 }
 
 #[wasm_bindgen]
@@ -22,24 +23,28 @@ impl App {
         Ok(Self {
             controller,
             element,
+            workers: InitCell::new(),
         })
     }
 
-    pub fn on_worker_msg(&self, msg: JsValue) {
+    pub fn on_worker_msg(&self, _id: u32, msg: JsValue) {
         webelements::log(format!("{:?}", msg));
     }
 
     pub fn start(&self, worker: JsValue) -> Result<(), JsValue> {
-        let worker = webelements::Worker::new(worker)?;
-
-        let app = self.clone();
-        let worker_ref = worker.clone();
-        worker.set_onmessage(move |value| {
-            app.on_worker_msg(value);
-            worker_ref
-                .post_message(&JsValue::from_str("hi from main thread"))
-                .unwrap();
-        })?;
+        let cpus = webelements::num_cpus()?.max(1);
+        let workers = (0..cpus)
+            .map(|i| {
+                let app = self.clone();
+                Worker::new(&worker)
+                    .map(|w| {
+                        w.set_onmessage(move |value| app.on_worker_msg(i, value))
+                            .map(|()| w)
+                    })
+                    .flatten()
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        InitCell::init(&self.workers, workers);
 
         let sudoku = Sudoku::from(
             ".................................................................................",

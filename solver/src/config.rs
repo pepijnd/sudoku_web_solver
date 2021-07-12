@@ -1,41 +1,13 @@
 use std::num::NonZeroU32;
-use std::sync::Arc;
+
+use serde::{Deserialize, Serialize};
 
 use crate::rules::Rules;
 use crate::solving::Target;
 use crate::Solver;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Config {
-    inner: Arc<ConfigDescriptor>,
-}
-
-impl std::ops::Deref for Config {
-    type Target = ConfigDescriptor;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            inner: Arc::new(Default::default()),
-        }
-    }
-}
-
-impl Config {
-    pub fn new(desc: ConfigDescriptor) -> Config {
-        Config {
-            inner: Arc::new(desc),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ConfigDescriptor {
     pub base: Solver,
     pub solvers: Vec<Solver>,
     pub fallback: Option<Solver>,
@@ -55,7 +27,7 @@ impl std::fmt::Debug for Config {
     }
 }
 
-impl Default for ConfigDescriptor {
+impl Default for Config {
     fn default() -> Self {
         Self {
             base: Solver::Base,
@@ -74,7 +46,7 @@ impl Default for ConfigDescriptor {
     }
 }
 
-impl ConfigDescriptor {
+impl Config {
     pub fn add_rules_solvers(&mut self) {
         if !self.rules.cages.cages.is_empty() {
             self.solvers.insert(0, Solver::Cage)

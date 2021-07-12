@@ -1,13 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::rules::Rules;
-use crate::solving::{Info, StateMod};
+use crate::solving::{EntryInfo, Info, StateMod};
 use crate::sudoku::Buffer;
 use crate::{Options, Solver, Sudoku};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Solve {
-    pub rules: Rules,
     steps: Vec<SolveStep>,
 }
 
@@ -22,7 +20,7 @@ impl Solve {
             .expect("Solve always has at least one step")
     }
 
-    pub fn invalid(sudoku: Sudoku, rules: Rules) -> Self {
+    pub fn invalid(sudoku: Sudoku) -> Self {
         let cache = Options::default();
         Self {
             steps: vec![SolveStep {
@@ -34,28 +32,28 @@ impl Solve {
                 correct: true,
                 valid: false,
             }],
-            rules,
         }
     }
-}
 
-impl From<Buffer> for Solve {
-    fn from(buffer: Buffer) -> Self {
-        let rules = buffer.rules.clone();
+    pub fn from_buffer(buffer: Buffer) -> Self {
         Self {
             steps: buffer
                 .into_inner()
                 .into_iter()
-                .filter(|s| s.info.change)
+                .filter(|s| s.info.entry.change)
                 .scan(None, |s, e| {
                     let solver = e.solver;
                     let sudoku = e.state.sudoku;
                     let cache = e.state.options;
                     let Info {
                         mods,
-                        solved,
-                        correct,
-                        valid,
+                        entry:
+                            EntryInfo {
+                                solved,
+                                correct,
+                                valid,
+                                ..
+                            },
                         ..
                     } = e.state.info;
                     let (sudoku, cache) = s.replace((sudoku, cache)).unwrap_or((sudoku, cache));
@@ -76,7 +74,6 @@ impl From<Buffer> for Solve {
                 })
                 .flatten()
                 .collect(),
-            rules,
         }
     }
 }

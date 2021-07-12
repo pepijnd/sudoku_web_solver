@@ -1,5 +1,6 @@
 #![warn(missing_debug_implementations)]
 #![feature(drain_filter)]
+#![allow(unused_variables)]
 
 pub mod config;
 pub mod options;
@@ -11,6 +12,7 @@ pub mod sudoku;
 pub mod threading;
 pub mod util;
 
+use config::Config;
 use solving::{AdvanceResult, Reporter, State};
 #[doc(inline)]
 pub use {
@@ -21,31 +23,12 @@ pub use {
     util::Cell,
 };
 
-pub trait SolverExt {
-    fn as_cloned_box(&self) -> Box<dyn EntrySolver>;
-}
-
-impl<T> SolverExt for T
-where
-    T: 'static + EntrySolver + Clone,
-{
-    fn as_cloned_box(&self) -> Box<dyn EntrySolver> {
-        Box::new(self.clone())
-    }
-}
-
-impl Clone for Box<dyn EntrySolver> {
-    fn clone(&self) -> Self {
-        self.as_cloned_box()
-    }
-}
-
-pub trait EntrySolver: SolverExt + std::fmt::Debug + Send {
-    fn advance(&mut self, state: &mut State, reporter: &mut Reporter) -> AdvanceResult;
-    fn verified(&self) -> bool {
+pub trait EntrySolver: std::fmt::Debug + Send {
+    fn advance(state: &mut State, config: &Config, reporter: &mut Reporter) -> AdvanceResult;
+    fn verified(state: &State) -> bool {
         true
     }
-    fn terminate(&self) -> bool {
+    fn terminate() -> bool {
         false
     }
 }

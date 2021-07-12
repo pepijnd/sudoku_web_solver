@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![warn(missing_debug_implementations)]
+#![feature(result_flattening)]
 
 mod ui;
 mod util;
