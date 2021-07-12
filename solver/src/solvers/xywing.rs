@@ -12,7 +12,7 @@ impl EntrySolver for XYWingSolver {
         for row in 0..9 {
             for col in 0..9 {
                 let cell = Cell::new(row, col);
-                let c_opts = state.options.options(cell, &state.sudoku);
+                let c_opts = state.cell_options(cell);
                 if *state.sudoku.cell(cell) != 0 {
                     continue;
                 }
@@ -36,7 +36,7 @@ impl XYWingSolver {
             })
             .flatten()
         {
-            let m_opts = state.options.options(matching, &state.sudoku);
+            let m_opts = state.cell_options(matching);
             if matching != cell
                 && *state.sudoku.cell(matching) == 0
                 && c_opts != m_opts
@@ -77,7 +77,7 @@ impl XYWingSolver {
                     && elim != other
                     && elim != matching
                     && elim != cell
-                    && state.remove(elim, value)
+                    && state.remove_option(elim, value)
                 {
                     mods.push_target(CellMod::option(elim, value));
                 }

@@ -33,7 +33,7 @@ impl ElimSolver {
             if *state.sudoku.cell(cell) != 0 {
                 continue;
             }
-            let options = state.options.options(cell, &state.sudoku);
+            let options = state.cell_options(cell);
             if options.has(value) {
                 if !mods.has_source() {
                     row = Some(cell.row);
@@ -64,7 +64,7 @@ impl ElimSolver {
                 if cell.sqr() == sqr || *state.sudoku.cell(cell) != 0 {
                     continue;
                 }
-                if state.remove(cell, value) {
+                if state.remove_option(cell, value) {
                     mods.push_target(CellMod::option(cell, value));
                 }
             }
@@ -74,7 +74,7 @@ impl ElimSolver {
                 if cell.sqr() == sqr || *state.sudoku.cell(cell) != 0 {
                     continue;
                 }
-                if state.remove(cell, value) {
+                if state.remove_option(cell, value) {
                     mods.push_target(CellMod::option(cell, value));
                 }
             }
@@ -97,7 +97,7 @@ impl ElimSolver {
             if *state.sudoku.cell(cell) != 0 {
                 continue;
             }
-            let options = state.options.options(cell, &state.sudoku);
+            let options = state.cell_options(cell);
             if options.has(value) {
                 if sqr.is_none() {
                     sqr = Some(cell.sqr());
@@ -120,7 +120,7 @@ impl ElimSolver {
                 if d.is(cell, n) || *state.sudoku.cell(cell) != 0 {
                     continue;
                 }
-                if state.remove(cell, value) {
+                if state.remove_option(cell, value) {
                     mods.push_target(CellMod::option(cell, value));
                 }
             }

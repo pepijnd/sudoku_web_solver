@@ -163,7 +163,9 @@ pub struct Buffer {
 impl Buffer {
     pub fn new(sudoku: Sudoku) -> Self {
         let mut buffer = Vec::with_capacity(32);
-        let state = Entry::new(sudoku, Options::default(), Solver::Init);
+        let mut options = Options::default();
+        options.init(&sudoku);
+        let state = Entry::new(sudoku, options, Solver::Init);
         buffer.push(state);
         Self { buffer }
     }

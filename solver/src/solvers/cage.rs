@@ -34,7 +34,7 @@ impl CageSolver {
                 if value != 0 {
                     cage_cells.push((cell, CellState::Digit(value)));
                 } else {
-                    let options = state.options(cell);
+                    let options = state.cell_options(cell);
                     cage_cells.push((cell, CellState::Option(options)));
                 }
             }
@@ -99,7 +99,7 @@ impl CageSolver {
             let mut mods = StateMod::from(state.info.entry.tech);
             for &(cell, options) in &sums {
                 for i in 1..=9 {
-                    if !options.has(i) && state.remove(cell, i) {
+                    if !options.has(i) && state.remove_option(cell, i) {
                         mods.push_target(CellMod::option(cell, i));
                     }
                 }

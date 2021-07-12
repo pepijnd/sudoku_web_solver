@@ -147,6 +147,7 @@ impl CellMod {
         match self.target {
             ModTarget::Digit(n) => {
                 s.set_cell(self.cell, n);
+                c.remove_options(self.cell, n);
                 true
             }
             ModTarget::Option(n) => c.remove(self.cell, n),
@@ -313,6 +314,7 @@ pub enum Target {
 pub struct BacktraceInfo {
     pub cell: Option<Cell>,
     pub options: CellOptions,
+    pub orig: Option<Options>,
     pub retries: u32,
     pub job: bool,
 }
@@ -322,6 +324,7 @@ impl Default for BacktraceInfo {
         Self {
             cell: None,
             options: CellOptions::default(),
+            orig: None,
             retries: 0,
             job: false,
         }
@@ -346,16 +349,17 @@ pub struct State {
 }
 
 impl State {
-    pub fn update(&mut self, cell: Cell, value: u8) {
+    pub fn set_digit(&mut self, cell: Cell, value: u8) {
         self.sudoku.set_cell(cell, value);
+        self.options.remove_options(cell, value);
     }
 
-    pub fn remove(&mut self, cell: Cell, value: u8) -> bool {
+    pub fn remove_option(&mut self, cell: Cell, value: u8) -> bool {
         self.options.remove(cell, value)
     }
 
-    pub fn options(&mut self, cell: Cell) -> CellOptions {
-        self.options.options(cell, &self.sudoku)
+    pub fn cell_options(&self, cell: Cell) -> CellOptions {
+        self.options.cell(cell)
     }
 }
 

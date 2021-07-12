@@ -25,7 +25,7 @@ impl SetSolver {
         if *state.sudoku.cell(cell) != 0 {
             return;
         }
-        let options = state.options.options(cell, &state.sudoku);
+        let options = state.cell_options(cell);
         let len = options.len();
         let mut set = smallvec::SmallVec::<[Cell; 6]>::new();
         set.push(cell);
@@ -34,7 +34,7 @@ impl SetSolver {
             if cmp == cell || *state.sudoku.cell(cmp) != 0 {
                 continue;
             }
-            let other = state.options.options(cmp, &state.sudoku);
+            let other = state.cell_options(cmp);
             if options.is_set(&other) {
                 set.push(cmp);
             }
@@ -49,7 +49,7 @@ impl SetSolver {
                 continue;
             }
             for value in options.iter() {
-                if state.remove(other, value) {
+                if state.remove_option(other, value) {
                     mods.push_target(CellMod::option(other, value));
                 }
             }
@@ -77,7 +77,7 @@ impl SetSolver {
                         continue;
                     }
                     for value in options.iter() {
-                        if state.remove(other, value) {
+                        if state.remove_option(other, value) {
                             mods.push_target(CellMod::option(other, value));
                         }
                     }
@@ -90,7 +90,7 @@ impl SetSolver {
                         continue;
                     }
                     for value in options.iter() {
-                        if state.remove(other, value) {
+                        if state.remove_option(other, value) {
                             mods.push_target(CellMod::option(other, value));
                         }
                     }

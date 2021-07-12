@@ -33,7 +33,7 @@ impl SingleSolver {
             .map(|i| domain.cell(i))
             .filter_map(|cell| {
                 if *state.sudoku.cell(cell) == 0 {
-                    Some((cell, state.options.options(cell, &state.sudoku)))
+                    Some((cell, state.cell_options(cell)))
                 } else {
                     None
                 }
@@ -55,7 +55,7 @@ impl SingleSolver {
         for (index, count) in options.iter().enumerate() {
             let value = (index + 1) as u8;
             if let Found::Single(cell) = count {
-                state.update(*cell, value);
+                state.set_digit(*cell, value);
                 mods.push_target(CellMod::digit(*cell, value));
             }
         }

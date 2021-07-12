@@ -59,7 +59,10 @@ impl XWingSolver {
             let mut row = RowSet::new(n);
             for i in 0..9 {
                 let cell = d.cell(n, i);
-                let options = state.options.options(cell, &state.sudoku);
+                if *state.sudoku.cell(cell) != 0 {
+                    continue;
+                }
+                let options = state.cell_options(cell);
                 if options.has(nr) && !row.add(i) {
                     continue 'n;
                 }
@@ -91,12 +94,12 @@ impl XWingSolver {
             }
 
             let cell = d.cell(first.first.unwrap(), i);
-            if state.remove(cell, value) {
+            if state.remove_option(cell, value) {
                 mods.push_target(CellMod::option(cell, value));
             }
 
             let cell = d.cell(first.second.unwrap(), i);
-            if state.remove(cell, value) {
+            if state.remove_option(cell, value) {
                 mods.push_target(CellMod::option(cell, value));
             }
         }

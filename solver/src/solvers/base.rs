@@ -103,9 +103,9 @@ impl EntrySolver for BaseSolver {
                 let cell = Cell::new(row, col);
                 let value = *state.sudoku.cell(cell);
                 if value == 0 {
-                    let options = state.options.options(cell, &state.sudoku);
+                    let options = state.cell_options(cell);
                     if let Some(value) = options.found() {
-                        state.update(cell, value);
+                        state.set_digit(cell, value);
                         mods.push_target(CellMod::digit(cell, value));
                     } else if options.is_empty() {
                         return AdvanceResult::Invalid;
@@ -135,43 +135,43 @@ pub struct Backtrace;
 impl EntrySolver for Backtrace {
     fn advance(state: &mut State, config: &Config, reporter: &mut Reporter) -> AdvanceResult {
         state.info.entry.correct = false;
-        let State {
-            info,
-            sudoku,
-            options,
-            caches,
-        } = state;
-
-        if info.backtrace().job {
+        if state.info.backtrace().job {
             return AdvanceResult::Advance;
         }
-        if info.backtrace().cell.is_none() {
-            if let Some(cell) = Self::heuristic(sudoku, options, config) {
-                info.backtrace().cell.replace(cell);
-                info.backtrace().options = options.options(cell, sudoku);
-                info.entry.splits *= info.backtrace().options.len() as u32;
+        if state.info.backtrace().cell.is_none() {
+            if let Some(cell) = Self::heuristic(&state.sudoku, &state.options, config) {
+                state.info.backtrace().cell.replace(cell);
+                state.info.backtrace().options = state.cell_options(cell);
+                state.info.backtrace().orig = Some(state.options);
+                state.info.entry.splits *= state.info.backtrace().options.len() as u32;
             } else {
                 return AdvanceResult::Invalid;
             }
         }
+        let cell = state
+            .info
+            .backtrace()
+            .cell
+            .expect("target cell should be set at this point");
+        state.options = state
+            .info
+            .backtrace()
+            .orig
+            .expect("orignal options should be set at this point");
         if let Some(max_splits) = config.max_splits {
-            let cell = info
-                .backtrace()
-                .cell
-                .expect("target cell should be set at this point");
-            if info.entry.splits < max_splits.get() {
+            if state.info.entry.splits < max_splits.get() {
                 let mut jobs = Vec::new();
-                let cell_options = info.backtrace().options;
+                let cell_options = state.info.backtrace().options;
                 for value in cell_options.iter() {
-                    let mods = StateMod::from_change(info.entry.tech, cell, value);
+                    let mods = StateMod::from_change(state.info.entry.tech, cell, value);
                     let mut state = State {
-                        sudoku: *sudoku,
-                        options: *options,
-                        info: info.clone(),
-                        caches: caches.clone(),
+                        sudoku: state.sudoku,
+                        options: state.options,
+                        info: state.info.clone(),
+                        caches: state.caches.clone(),
                     };
                     state.info.push_mod(mods);
-                    state.update(cell, value);
+                    state.set_digit(cell, value);
                     state.info.entry.depth += 1;
                     jobs.push(Entry {
                         state,
@@ -182,15 +182,11 @@ impl EntrySolver for Backtrace {
             }
         }
 
-        reporter.progress(info.backtrace().retries, info.entry.splits);
+        reporter.progress(state.info.backtrace().retries, state.info.entry.splits);
 
-        if let Some(value) = info.backtrace().options.take() {
-            info.backtrace().retries += 1;
-            let cell = info
-                .backtrace()
-                .cell
-                .expect("target cell should be set at this point");
-            state.update(cell, value);
+        if let Some(value) = state.info.backtrace().options.take() {
+            state.info.backtrace().retries += 1;
+            state.set_digit(cell, value);
             let mods = StateMod::from_change(state.info.entry.tech, cell, value);
             state.info.push_mod(mods);
             AdvanceResult::Advance
@@ -209,7 +205,7 @@ impl EntrySolver for Backtrace {
 }
 
 impl Backtrace {
-    pub fn heuristic(sudoku: &Sudoku, options: &mut Options, config: &Config) -> Option<Cell> {
+    pub fn heuristic(sudoku: &Sudoku, options: &Options, config: &Config) -> Option<Cell> {
         let mut candidate: Option<(usize, Cell)> = None;
         for row in 0..9 {
             for col in 0..9 {
@@ -217,7 +213,7 @@ impl Backtrace {
                 if *sudoku.cell(cell) != 0 {
                     continue;
                 };
-                let options = options.options(cell, sudoku);
+                let options = options.cell(cell);
                 let mut score = 10 - options.len();
                 if config.rules.cages.cells[cell.index()] != 0 {
                     score *= 2;
@@ -241,8 +237,8 @@ impl Default for Backtrace {
 mod test {
     use super::Backtrace;
     use crate::{
-        config::Config, solving::Reporter, AdvanceResult, Cell, CellOptions, EntrySolver, State,
-        Sudoku,
+        config::Config, solving::Reporter, AdvanceResult, Cell, CellOptions, EntrySolver, Options,
+        State, Sudoku,
     };
 
     static SAMPLE: &str =
@@ -251,12 +247,15 @@ mod test {
     #[test]
     fn backtrace_test() {
         let sudoku = Sudoku::from(SAMPLE);
+        let mut options = Options::default();
+        options.init(&sudoku);
         let mut state = State {
             sudoku,
+            options,
             ..Default::default()
         };
         assert_eq!(
-            state.options.options(Cell::new(0, 5), &state.sudoku),
+            state.cell_options(Cell::new(0, 5)),
             CellOptions::from(&[7, 9])
         );
         let mut reporter = Reporter::default();

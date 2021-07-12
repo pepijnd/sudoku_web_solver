@@ -219,12 +219,12 @@ impl Options {
         for (option, e) in self.options.iter().enumerate() {
             if let Some(step) = info.solve_step() {
                 let index = option as u8 + 1;
-                let mut cache = step.cache;
+                let cache = step.cache;
                 e.remove_class("target");
                 e.remove_class("source");
                 e.remove_class("hidden");
                 e.remove_class("digit");
-                if !cache.options(self.cell, &step.sudoku).has(index) {
+                if !cache.cell(self.cell).has(index) {
                     e.add_class("hidden");
                 }
                 if let Some(step) = info.solve_step() {

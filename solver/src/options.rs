@@ -199,6 +199,10 @@ impl<'a> Iterator for OptionsIter<'a> {
         }
         None
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(9))
+    }
 }
 
 #[derive(Debug, Copy, Clone, Deserialize, Serialize)]
@@ -212,30 +216,25 @@ impl Options {
         self.cells[cell.index()].remove(value)
     }
 
-    pub fn options(&mut self, cell: Cell, sudoku: &Sudoku) -> CellOptions {
-        let value = *sudoku.cell(cell);
-        if value != 0 {
-            let mut options = CellOptions::default();
-            options.add(value);
-            self.cells[cell.index()] = options;
-            return options;
+    pub fn init(&mut self, sudoku: &Sudoku) {
+        for (cell, &value) in sudoku.inner().iter().enumerate() {
+            let cell = Cell::from_index(cell);
+            if value != 0 {
+                self.remove_options(cell, value);
+            }
         }
-        let options = &mut self.cells[cell.index()];
-        for value in sudoku.row(cell.row) {
-            options.remove(value);
-        }
-        for value in sudoku.col(cell.col) {
-            options.remove(value);
-        }
-        for value in sudoku.sqr(cell.sqr()) {
-            options.remove(value);
-        }
-
-        *options
     }
 
-    pub fn cell(&self, cell: Cell) -> &CellOptions {
-        &self.cells[9 * cell.row + cell.col]
+    pub fn remove_options(&mut self, cell: Cell, value: u8) {
+        for i in 0..9 {
+            self.remove(Cell::new(cell.row, i), value);
+            self.remove(Cell::new(i, cell.col), value);
+            self.remove(Cell::from_sqr(cell.sqr(), i), value);
+        }
+    }
+
+    pub fn cell(&self, cell: Cell) -> CellOptions {
+        self.cells[9 * cell.row + cell.col]
     }
 
     pub fn cells(&self) -> &[CellOptions] {
@@ -338,7 +337,8 @@ mod test {
     fn cache_options() {
         let sudoku = Sudoku::from(SAMPLE);
         let mut cache = Options::default();
+        cache.init(&sudoku);
         let options = CellOptions::from(&[1, 2, 4, 5, 6, 7]);
-        assert_eq!(cache.options(Cell::new(0, 0), &sudoku), options);
+        assert_eq!(cache.cell(Cell::new(0, 0)), options);
     }
 }
