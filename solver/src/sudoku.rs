@@ -8,7 +8,7 @@ use crate::threading::SolveJobs;
 use crate::util::Domain;
 use crate::{AdvanceResult, Cell, Options, Solver};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SolveResult {
     Invalid,
     Solution(Sudoku),
@@ -178,11 +178,8 @@ impl Buffer {
             /*config.canceled() ||*/
             solutions.len() > 1000 {
                 match config.target {
-                    Target::Sudoku => {
-                        return SolveResult::Incomplete(entry.sudoku);
-                    }
-                    Target::Steps => return SolveResult::Steps(Box::new(Solve::from_buffer(self))),
                     Target::List => return SolveResult::List(solutions),
+                    _ => unreachable!()
                 }
             }
             match entry.advance(config, &mut reporter) {
@@ -203,7 +200,11 @@ impl Buffer {
                                 }
                             }
                             Target::Steps => {
-                                return SolveResult::Steps(Box::new(Solve::from_buffer(self)))
+                                return if entry.info.entry.valid && entry.info.entry.solved {
+                                    SolveResult::Steps(Box::new(Solve::from_buffer(self)))
+                                } else {
+                                    SolveResult::Invalid
+                                }
                             }
                             Target::List => {
                                 if entry.info.entry.valid && entry.info.entry.solved {

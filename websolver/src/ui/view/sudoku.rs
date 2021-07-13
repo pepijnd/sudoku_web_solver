@@ -90,50 +90,52 @@ impl CellBox {
     }
 
     pub fn update(&self, sudoku: &SudokuController) {
-        let info = sudoku.app.info.info.borrow();
-        let model = sudoku.state.borrow();
-        let step = info
-            .solve_step()
-            .as_ref()
-            .map(|s| *s.sudoku.cell(self.cell));
-        let value = model.start().cell(self.cell);
-        debug_assert!(value <= 9, "invalid cell value {}", value);
-        self.number.remove_class("starting state empty");
-        self.remove_class("target source selected");
+        {
+            let info = sudoku.app.info.info.lock().unwrap();
+            let model = sudoku.state.borrow();
+            let step = info
+                .solve_step()
+                .as_ref()
+                .map(|s| *s.sudoku.cell(self.cell));
+            let value = model.start().cell(self.cell);
+            debug_assert!(value <= 9, "invalid cell value {}", value);
+            self.number.remove_class("starting state empty");
+            self.remove_class("target source selected");
 
-        if info.solve().is_some() {
-            self.options.remove_class("hidden");
-        } else {
-            self.options.add_class("hidden");
-        }
-        if value > 0 {
-            self.number.set_text(&format!("{}", value));
-            self.number.add_class("starting");
-            self.options.add_class("hidden");
-        } else if let Some(value) = step {
-            self.number.add_class("state");
+            if info.solve().is_some() {
+                self.options.remove_class("hidden");
+            } else {
+                self.options.add_class("hidden");
+            }
             if value > 0 {
                 self.number.set_text(&format!("{}", value));
+                self.number.add_class("starting");
                 self.options.add_class("hidden");
+            } else if let Some(value) = step {
+                self.number.add_class("state");
+                if value > 0 {
+                    self.number.set_text(&format!("{}", value));
+                    self.options.add_class("hidden");
+                } else {
+                    self.number.set_text("");
+                }
             } else {
+                self.number.add_class("empty");
                 self.number.set_text("");
             }
-        } else {
-            self.number.add_class("empty");
-            self.number.set_text("");
-        }
 
-        if let Some(step) = info.solve_step().as_ref() {
-            if step.change.is_target(self.cell) {
-                self.add_class("target");
-            } else if step.change.is_source(self.cell) {
-                self.add_class("source");
+            if let Some(step) = info.solve_step().as_ref() {
+                if step.change.is_target(self.cell) {
+                    self.add_class("target");
+                } else if step.change.is_source(self.cell) {
+                    self.add_class("source");
+                }
             }
-        }
 
-        if let Some(selected) = model.selected() {
-            if selected == self.cell {
-                self.add_class("selected");
+            if let Some(selected) = model.selected() {
+                if selected == self.cell {
+                    self.add_class("selected");
+                }
             }
         }
 
@@ -215,7 +217,7 @@ impl WebElement for Options {
 
 impl Options {
     fn update(&self, sudoku: &SudokuController) {
-        let info = sudoku.app.info.info.borrow();
+        let info = sudoku.app.info.info.lock().unwrap();
         for (option, e) in self.options.iter().enumerate() {
             if let Some(step) = info.solve_step() {
                 let index = option as u8 + 1;

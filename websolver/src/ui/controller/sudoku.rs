@@ -1,20 +1,30 @@
 use std::cell::RefCell;
+use std::fmt::Debug;
 use std::rc::Rc;
 
+use solver::rules::Rules;
 use solver::Solve;
-use wasm_bindgen::JsValue;
 use webelements::Result;
 
 use super::app::AppController;
 use crate::ui::sudoku::{Sudoku, SudokuModel, SudokuStateModel};
 use crate::util::InitCell;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SudokuController {
     element: Sudoku,
     pub app: InitCell<AppController>,
-    pub solver: RefCell<Option<js_sys::Function>>,
+    pub solver: InitCell<Box<dyn Fn(solver::Sudoku, Rules)>>,
     pub state: Rc<RefCell<SudokuStateModel>>,
+}
+
+impl Debug for SudokuController {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SudokuController")
+            .field("app", &self.app)
+            .field("state", &self.state)
+            .finish_non_exhaustive()
+    }
 }
 
 impl SudokuController {
@@ -84,7 +94,7 @@ impl SudokuController {
         Ok(Self {
             app: InitCell::clone(&app),
             element: element.clone(),
-            solver: RefCell::new(None),
+            solver: InitCell::new(),
             state: Rc::new(RefCell::new(SudokuStateModel::default())),
         })
     }
@@ -92,22 +102,13 @@ impl SudokuController {
     pub fn solve(&self) {
         let model = self.state.borrow();
         let start = model.start();
-        if let Some(solver) = self.solver.borrow().as_ref() {
-            let this = JsValue::null();
-            solver
-                .call2(
-                    &this,
-                    &JsValue::from_serde(start.get()).unwrap(),
-                    &JsValue::from_serde(&model.rules).unwrap(),
-                )
-                .unwrap();
-        }
+        (*self.solver)(*start.get(), model.rules.clone());
     }
 
     pub fn on_solve(&self, solve: Solve) -> Result<()> {
         {
             let mut model = self.state.borrow_mut();
-            let mut info = self.app.info.info.borrow_mut();
+            let mut info = self.app.info.info.lock().unwrap();
 
             let step = solve.iter().last().unwrap();
             model.set_state(SudokuModel::from(step.sudoku));
@@ -119,7 +120,7 @@ impl SudokuController {
         Ok(())
     }
 
-    pub fn set_solver(&self, solver: &js_sys::Function) {
-        self.solver.borrow_mut().replace(solver.clone());
+    pub fn set_solver(&self, solver: impl Fn(solver::Sudoku, Rules) + 'static) {
+        InitCell::init(&self.solver, Box::new(solver))
     }
 }

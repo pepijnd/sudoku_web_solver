@@ -31,7 +31,7 @@ struct StateModStep<'a> {
 #[derive(Debug)]
 pub struct SudokuInfo {
     measure: Option<Measure>,
-    progress: Option<Vec<(u32, u32)>>,
+    progress: Option<f64>,
     solve: Option<Solve>,
     step: usize,
     s_step: Option<SolveStep>,
@@ -47,11 +47,11 @@ impl SudokuInfo {
         self.measure = Some(m);
     }
 
-    pub fn progress(&self) -> Option<&[(u32, u32)]> {
-        self.progress.as_ref().map(|f| &f[..])
+    pub fn progress(&self) -> Option<f64> {
+        self.progress
     }
 
-    pub fn set_progress(&mut self, p: Vec<(u32, u32)>) -> Result<()> {
+    pub fn set_progress(&mut self, p: f64) -> Result<()> {
         self.progress = Some(p);
         self.update_properties()?;
         Ok(())
@@ -114,41 +114,16 @@ impl SudokuInfo {
             style.set_property("--step-place", "50%").unwrap();
         }
 
-        let max_steps = 6;
         if let Some(progress) = self.progress() {
             style
                 .set_property(
-                    "--progress-steps",
-                    &format!("{}", progress.len().min(max_steps)),
+                    "--progress",
+                    &format!("{:.2}", progress),
                 )
                 .unwrap();
-            for step in 0..max_steps.min(progress.len()) {
-                let (chance, _) = progress[step..progress.len()].iter().fold(
-                    (0.0, 1),
-                    |(chance, part), &(g, t)| {
-                        ((g as f64 / t as f64) / part as f64 + chance, part * t)
-                    },
-                );
-                style
-                    .set_property(
-                        &format!("--progress-part-{}", step),
-                        &format!("{:.2}%", chance * 100.0),
-                    )
-                    .unwrap();
-                if step == 0 {
-                    style
-                        .set_property("--progress-chance", &format!("'{:.2}%'", chance * 100.0))
-                        .unwrap();
-                }
-            }
-            for i in progress.len()..max_steps {
-                style
-                    .set_property(&format!("--progress-part-{}", i), "0.0%")
-                    .unwrap();
-            }
         } else {
             style
-                .set_property("--progress-chance", &format!("'{:.2}%'", 0.0))
+                .set_property("--progress", &format!("'{:.2}%'", 0.0))
                 .unwrap();
         }
 

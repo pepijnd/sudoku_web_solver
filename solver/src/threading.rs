@@ -10,10 +10,10 @@ use crate::{Solver, Sudoku};
 
 #[derive(Debug)]
 pub struct RunnerJobs {
-    buffer: Buffer,
-    entries: Vec<Entry>,
-    total: u32,
-    size: u32,
+    pub buffer: Buffer,
+    pub entries: Vec<Entry>,
+    pub total: u64,
+    pub size: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -139,7 +139,7 @@ impl Runner {
                         queue.push(RunnerJobs {
                             buffer: jobs.buffer,
                             entries: jobs.jobs,
-                            total: size * total,
+                            total: size as u64 * total,
                             size,
                         })
                     }
@@ -170,7 +170,7 @@ impl Runner {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SolveJobs {
     pub buffer: Buffer,
     pub jobs: Vec<Entry>,
@@ -180,5 +180,7 @@ pub struct SolveJobs {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ThreadMessage {
     Ready,
-    Job(Box<Buffer>),
+    Job(Box<(Config, Buffer)>),
+    Result(SolveResult),
+    Progress(f64),
 }

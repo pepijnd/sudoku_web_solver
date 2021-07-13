@@ -20,6 +20,13 @@ impl Solve {
             .expect("Solve always has at least one step")
     }
 
+    pub fn solved(&self) -> bool {
+        if let Some(step) = self.steps.last() {
+            return step.solved;
+        }
+        false
+    }
+
     pub fn invalid(sudoku: Sudoku) -> Self {
         let cache = Options::default();
         Self {

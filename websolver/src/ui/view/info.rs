@@ -97,7 +97,7 @@ pub struct InfoStat {
 
 impl InfoStat {
     pub fn update(&self, info: &InfoController) -> Result<()> {
-        let info = info.info.borrow();
+        let info = info.info.lock().unwrap();
         let stat = match self.stat {
             Stat::Tech => "Tech",
             Stat::Steps => "Steps",

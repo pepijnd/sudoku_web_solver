@@ -26,7 +26,7 @@ impl EditorController {
             let input = element.steps.slider.slider.clone();
             move |_event| {
                 {
-                    let mut info = app.info.info.borrow_mut();
+                    let mut info = app.info.info.lock().unwrap();
                     if let Ok(value) = input.get_value::<i32>() {
                         info.set_step(value.try_into().unwrap()).unwrap();
                     }
@@ -48,7 +48,7 @@ impl EditorController {
         } else {
             {
                 let mut model = self.app.sudoku.state.borrow_mut();
-                let mut info = self.app.info.info.borrow_mut();
+                let mut info = self.app.info.info.lock().unwrap();
                 match action {
                     EditorAction::Erase => {
                         model.clear_state();

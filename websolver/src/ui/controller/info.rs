@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use webelements::Result;
 
@@ -12,7 +13,7 @@ use crate::util::InitCell;
 pub struct InfoController {
     element: Info,
     app: InitCell<AppController>,
-    pub info: Rc<RefCell<SudokuInfo>>,
+    pub info: Arc<Mutex<SudokuInfo>>,
 }
 
 impl InfoController {
@@ -24,7 +25,7 @@ impl InfoController {
         Ok(Self {
             app,
             element: info.clone(),
-            info: Rc::new(RefCell::new(SudokuInfo::default())),
+            info: Arc::new(Mutex::new(SudokuInfo::default())),
         })
     }
 }
