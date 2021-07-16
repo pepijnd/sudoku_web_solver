@@ -19,21 +19,6 @@ impl Default for StateInit {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct StateNoOp;
-
-impl EntrySolver for StateNoOp {
-    fn advance(_state: &mut State, config: &Config, _reporter: &mut Reporter) -> AdvanceResult {
-        AdvanceResult::Advance
-    }
-}
-
-impl Default for StateNoOp {
-    fn default() -> Self {
-        Self
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
 pub struct StateSolved;
 
 impl EntrySolver for StateSolved {
@@ -136,7 +121,12 @@ impl EntrySolver for Backtrace {
     fn advance(state: &mut State, config: &Config, reporter: &mut Reporter) -> AdvanceResult {
         state.info.entry.correct = false;
         if state.info.backtrace().job {
-            return AdvanceResult::Advance;
+            if state.info.backtrace().cell.is_some() {
+                return AdvanceResult::Advance;
+            } else {
+                state.info.backtrace().cell = None;
+                return AdvanceResult::Invalid;
+            }
         }
         if state.info.backtrace().cell.is_none() {
             if let Some(cell) = Self::heuristic(&state.sudoku, &state.options, config) {
@@ -161,7 +151,9 @@ impl EntrySolver for Backtrace {
                     let mods = StateMod::from_change(state.info.entry.tech, cell, value);
                     let mut state = state.clone();
                     state.info.push_mod(mods);
+                    state.info.backtrace = None;
                     state.info.backtrace().job = true;
+                    state.info.backtrace().cell = Some(cell);
                     state.set_digit(cell, value);
                     state.info.entry.depth += 1;
                     jobs.push(Entry {
@@ -184,7 +176,7 @@ impl EntrySolver for Backtrace {
             .expect("orignal options should be set at this point");
             state.set_digit(cell, value);
             let mods = StateMod::from_change(state.info.entry.tech, cell, value);
-            state.info.push_mod(mods);
+            state.info.set_mod(mods);
             AdvanceResult::Advance
         } else {
             AdvanceResult::Invalid

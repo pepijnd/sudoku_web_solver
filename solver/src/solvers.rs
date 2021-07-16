@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[doc(inline)]
 pub use self::{
     base::StateSolved,
-    base::{Backtrace, BaseSolver, StateIncomplete, StateInit, StateInvalid, StateNoOp},
+    base::{Backtrace, BaseSolver, StateIncomplete, StateInit, StateInvalid},
     cage::CageSolver,
     elim::ElimSolver,
     sets::SetSolver,
@@ -86,7 +86,6 @@ macro_rules! solver {
 solver! {
     pub Solver {
         Init => StateInit,
-        NoOp => StateNoOp,
         BackTrace => Backtrace,
         Base => BaseSolver,
         Cage => CageSolver,

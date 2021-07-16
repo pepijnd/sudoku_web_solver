@@ -1,4 +1,3 @@
-use wasm_bindgen::JsValue;
 use webelements::{we_builder, Result, WebElement, WebElementBuilder};
 
 use crate::ui::controller::app::AppController;
@@ -194,7 +193,6 @@ impl StepSlider {
             self.slider.set_min(0);
             self.slider.set_max(info.max());
             self.slider.set_value(info.step());
-            webelements::log!(JsValue::from_serde(&info.step()).unwrap());
             self.slider.del_attr("disabled")?;
         }
         Ok(())

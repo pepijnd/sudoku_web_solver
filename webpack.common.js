@@ -5,6 +5,9 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const dist = path.resolve(__dirname, "dist");
 
+const { NODE_ENV } = process.env;
+const dev = NODE_ENV === "dev";
+
 module.exports = {
     entry: {
         index: "./js/index.js",
@@ -18,23 +21,19 @@ module.exports = {
             {
                 test: /\.(sa|sc|c)ss$/,
                 use: [
-                    MiniCssExtractPlugin.loader,
-                    {
-                        loader: 'css-loader'
-                    },
+                    dev ? 'style-loader' : MiniCssExtractPlugin.loader,
+                    'css-loader',
                     {
                         loader: 'postcss-loader',
                         options: {
                             postcssOptions: {
                                 plugins: [
-                                    "autoprefixer",
+                                    'autoprefixer',
                                 ]
                             }
                         }
                     },
-                    {
-                        loader: "sass-loader"
-                    }
+                    'sass-loader',
                 ]
             }
         ]

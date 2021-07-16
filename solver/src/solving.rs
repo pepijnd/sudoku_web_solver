@@ -418,6 +418,11 @@ impl Info {
         self.entry.change = true;
     }
 
+    pub fn set_mod(&mut self, m: StateMod) {
+        self.mods = vec![m];
+        self.entry.change = true;
+    }
+
     pub fn push_state(&mut self) {
         self.mods.push(StateMod::from(self.entry.tech));
         self.entry.change = true;

@@ -47,7 +47,7 @@ impl Solve {
             steps: buffer
                 .into_inner()
                 .into_iter()
-                .filter(|s| s.info.entry.change)
+                .filter(|s| { s.info.entry.change && !s.info.mods.is_empty() })
                 .scan(None, |s, e| {
                     let solver = e.solver;
                     let sudoku = e.state.sudoku;

@@ -77,15 +77,18 @@
 
   .cell-options {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    padding: calc(1.5 * var(--indicator-size));
+    grid-template-columns: repeat(5, auto);
+    grid-template-rows: repeat(2, auto);
+    align-content: center;
+    justify-content: center;
     font-size: small;
+    padding-top: 10%;
 
     .cell-option {
       display: flex;
       align-items: center;
       justify-content: center;
+      padding-bottom: 0;
 
       &.digit {
         color: var(--indication-color);

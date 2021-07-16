@@ -235,15 +235,16 @@ impl Buffer {
                                     }
                                 }
                                 Target::Steps => {
-                                    if let Some(last) = last_known {
-                                        return SolveResult::Steps(Box::new(Solve::from_buffer(
-                                            last,
-                                        )));
-                                    } else {
-                                        return SolveResult::Steps(Box::new(Solve::invalid(
-                                            old.sudoku,
-                                        )));
-                                    }
+                                    return SolveResult::Invalid;
+                                    // if let Some(last) = last_known {
+                                    //     return SolveResult::Steps(Box::new(Solve::from_buffer(
+                                    //         last,
+                                    //     )));
+                                    // } else {
+                                    //     return SolveResult::Steps(Box::new(Solve::invalid(
+                                    //         old.sudoku,
+                                    //     )));
+                                    // }
                                 }
                                 Target::List => return SolveResult::List(solutions),
                             }

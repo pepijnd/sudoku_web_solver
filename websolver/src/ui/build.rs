@@ -1,23 +1,19 @@
-use std::{
-    cell::Cell,
-    num::NonZeroU64,
-    sync::{Arc, Mutex},
-};
+use std::{num::NonZeroU64, sync::Mutex};
 
 use solver::{
     config::Config,
     rules::Rules,
-    solving::{Entry, Target},
+    solving::{Target},
     sudoku::{Buffer, SolveResult},
     threading::{RunnerJobs, ThreadMessage},
-    Solve, Solver, Sudoku,
+    Sudoku,
 };
 use wasm_bindgen::prelude::*;
 use webelements::{document, WebElementBuilder, Worker};
 
 use super::controller::app::AppController;
 use super::view::app::AppElement;
-use crate::util::{InitCell, Measure};
+use crate::util::InitCell;
 
 #[derive(Debug)]
 pub struct Runner {
@@ -55,7 +51,6 @@ impl Runner {
         }
         self.working = true;
 
-
         self.config = Config {
             rules,
             target: Target::Steps,
@@ -64,21 +59,21 @@ impl Runner {
         };
         self.config.add_rules_solvers();
         let mut buffer = Buffer::new(sudoku);
-        let mut state = buffer
-            .get()
-            .expect("buffer always starts with at least one entry")
-            .state
-            .clone();
-        state.info.entry.tech = Solver::NoOp;
+        let entry = buffer.pop().unwrap();
         self.queue.push(RunnerJobs {
             buffer,
-            entries: vec![Entry::from_state(state)],
+            entries: vec![entry],
             total: 1,
             size: 1,
         });
+        self.reset_workers();
+    }
 
+    pub fn reset_workers(&mut self) {
         let cpus = webelements::num_cpus().unwrap().max(1);
-        webelements::log!("num_cpus: ", JsValue::from_serde(&cpus).unwrap());
+        self.workers
+            .drain(..)
+            .for_each(|(w, _, _, _)| w.terminate());
         self.workers = (0..cpus)
             .map(|i| {
                 let app = self.app.clone();
@@ -89,27 +84,16 @@ impl Runner {
                     })
                     .flatten()
             })
-            .collect::<Result<Vec<_>, _>>().unwrap();
-
-        // let job = self.get_job().unwrap();
-        // for (worker, ready, _, _) in self.workers.iter_mut() {
-        //     if *ready {
-        //         webelements::log!("runner: sending starting job");
-        //         worker
-        //             .post_message(JsValue::from_serde(&ThreadMessage::Job(Box::new(job))).unwrap())
-        //             .unwrap();
-        //         *ready = false;
-        //         break;
-        //     }
-        // }
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
     }
 
-    pub fn get_job(&mut self) -> Option<(solver::config::Config, solver::sudoku::Buffer)> {
+    pub fn get_job(&mut self) -> Option<(u64, solver::sudoku::Buffer)> {
         let job = if let Some(job) = self.queue.first_mut() {
             let entry = job.entries.pop().unwrap();
             let mut buffer = job.buffer.clone();
             buffer.push(entry);
-            Some((self.config.clone(), buffer))
+            Some((job.total, buffer))
         } else {
             None
         };
@@ -129,21 +113,16 @@ impl Runner {
                     return;
                 }
                 match result {
-                    SolveResult::Invalid | SolveResult::Incomplete(_) => {}
+                    SolveResult::Invalid | SolveResult::Incomplete(_) => {
+                        self.progress += 1.0 / total as f64;
+                        self.workers[worker as usize].3 = 0.0;
+                    }
                     SolveResult::Solution(_) => {}
                     SolveResult::Steps(solve) => {
-                        if solve.solved() {
-                            self.working = false;
-                            self.app
-                                .controller
-                                .info
-                                .info
-                                .lock()
-                                .unwrap()
-                                .set_solve(*solve)
-                                .unwrap();
-                            self.app.controller.update().unwrap();
-                        }
+                        self.working = false;
+                        self.app.controller.sudoku.on_solve(*solve).unwrap();
+                        self.progress += 1.0 / total as f64;
+                        self.workers[worker as usize].3 = 0.0;
                     }
                     SolveResult::List(list) => {
                         self.output.extend_from_slice(&list[..]);
@@ -167,8 +146,10 @@ impl Runner {
             _ => {}
         }
         if !self.working {
-            self.workers.drain(..).for_each(|(w, _, _, _)| {w.terminate()});
-            return
+            self.workers
+                .drain(..)
+                .for_each(|(w, _, _, _)| w.terminate());
+            return;
         }
         let mut done = self.queue.is_empty();
         let mut progress = self.progress;
@@ -176,16 +157,17 @@ impl Runner {
             progress += self.workers[i].3;
             if !self.workers[i].1 {
                 done = false;
-            } else if let Some(job) = self.get_job() {
+            } else if let Some((total, job)) = self.get_job() {
                 self.workers[i].1 = false;
+                self.workers[i].2 = total;
                 self.workers[i]
                     .0
-                    .post_message(JsValue::from_serde(&ThreadMessage::Job(Box::new(job))).unwrap())
+                    .post_message(JsValue::from_serde(&ThreadMessage::Job(Box::new((self.config.clone(), job)))).unwrap())
                     .unwrap();
                 done = false;
             }
         }
-        if progress > self.reported + 0.01 {
+        if progress > self.reported + 0.0005 {
             self.app
                 .controller
                 .info
@@ -233,7 +215,8 @@ impl App {
         InitCell::init(&self.runner, Mutex::new(Runner::new(self.clone(), worker)));
 
         let sudoku = Sudoku::from(
-            ".................................................................................",
+            "451279836936.....................................................................",
+            // ".................................................................................",
         );
 
         let cages = solver::rules::Cages {

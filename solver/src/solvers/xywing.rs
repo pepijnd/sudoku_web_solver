@@ -73,6 +73,7 @@ impl XYWingSolver {
         for d in &[SetDomain::Row, SetDomain::Col, SetDomain::Sqr] {
             for i in 0..9 {
                 let elim = d.matching(matching, i);
+                if *state.sudoku.cell(elim) != 0 { continue }
                 if other.sees(elim)
                     && elim != other
                     && elim != matching

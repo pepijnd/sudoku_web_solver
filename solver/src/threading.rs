@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::Config;
 use crate::solving::{Entry, Reporter};
 use crate::sudoku::{Buffer, SolveResult};
-use crate::{Solver, Sudoku};
+use crate::{Sudoku};
 
 #[derive(Debug)]
 pub struct RunnerJobs {
@@ -30,15 +30,10 @@ impl Runner {
     pub fn new(sudoku: Sudoku) -> Self {
         let mut queue = Vec::new();
         let mut buffer = Buffer::new(sudoku);
-        let mut state = buffer
-            .get()
-            .expect("buffer always starts with at least one entry")
-            .state
-            .clone();
-        state.info.entry.tech = Solver::NoOp;
+        let entry = buffer.pop().unwrap();
         queue.push(RunnerJobs {
             buffer,
-            entries: vec![Entry::from_state(state)],
+            entries: vec![entry],
             total: 1,
             size: 1,
         });
