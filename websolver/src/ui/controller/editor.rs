@@ -1,15 +1,17 @@
 use std::convert::TryInto;
+use std::sync::{Arc, Mutex};
 
 use webelements::Result;
 
 use crate::ui::app::AppController;
-use crate::ui::editor::{Editor, EditorAction};
+use crate::ui::editor::{Editor, EditorAction, EditorState};
 use crate::util::InitCell;
 
 #[derive(Debug, Clone)]
 pub struct EditorController {
     element: Editor,
     pub app: InitCell<AppController>,
+    pub state: Arc<Mutex<EditorState>>,
 }
 
 impl EditorController {
@@ -38,6 +40,7 @@ impl EditorController {
         Ok(Self {
             app,
             element: element.clone(),
+            state: Arc::new(Mutex::new(EditorState::default()))
         })
     }
 
@@ -97,5 +100,9 @@ impl EditorController {
             sudoku.app.update()?;
         }
         Ok(())
+    }
+
+    pub fn disabled(&self) -> bool {
+        self.state.lock().unwrap().disabled()
     }
 }

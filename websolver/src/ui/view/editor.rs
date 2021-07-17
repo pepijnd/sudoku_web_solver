@@ -115,8 +115,9 @@ impl EditorButton {
         self.on_click(move |_event| editor.on_action(action).unwrap())
     }
 
-    pub fn update(&self, _editor: &EditorController) {
+    pub fn update(&self, editor: &EditorController) {
         let text = self.action.to_string();
+        self.as_ref().set_disabled(editor.disabled());
         self.set_text(&text);
     }
 
@@ -184,16 +185,16 @@ pub struct StepSlider {}
 impl StepSlider {
     fn update(&self, editor: &EditorController) -> Result<()> {
         let info = editor.app.info.info.lock().unwrap();
-        if info.solve().is_none() {
+        if info.solve().is_none() || editor.disabled() {
             self.slider.set_min(-1);
             self.slider.set_max(1);
             self.slider.set_value(0);
-            self.slider.set_attr("disabled", "true")?;
+            self.slider.set_disabled(true);
         } else {
             self.slider.set_min(0);
             self.slider.set_max(info.max());
             self.slider.set_value(info.step());
-            self.slider.del_attr("disabled")?;
+            self.slider.set_disabled(false);
         }
         Ok(())
     }

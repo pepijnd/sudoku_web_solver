@@ -45,7 +45,7 @@ impl SudokuStateModel {
     pub fn set_selected(&mut self, cell: Cell) {
         self.selected.replace(cell);
     }
-
+    
     pub fn deselect(&mut self) {
         self.selected.take();
     }

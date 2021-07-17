@@ -1,3 +1,27 @@
+#[derive(Debug)]
+pub struct EditorState {
+    disabled: bool,
+}
+
+impl EditorState {
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+    }
+
+    pub fn disabled(&self) -> bool {
+        self.disabled
+    }
+}
+
+impl Default for EditorState {
+    fn default() -> Self {
+        Self {
+            disabled: false,
+        }
+    }
+}
+
+
 #[derive(Debug, Copy, Clone)]
 pub enum EditorAction {
     SetValue(u8),

@@ -38,6 +38,9 @@ impl SudokuController {
         webelements::document()?
             .on_key(move |event| {
                 {
+                    if sudoku.app.editor.disabled() {
+                        return;
+                    }
                     let mut model = sudoku.state.borrow_mut();
                     let selected = model.selected();
                     if let Some(mut selected) = selected {
@@ -85,8 +88,13 @@ impl SudokuController {
             let sudoku = InitCell::clone(&app.sudoku);
             cell.on_click(Box::new(move |_event| {
                 {
+                    if sudoku.app.editor.disabled() { return }
                     let mut model = sudoku.state.borrow_mut();
-                    model.set_selected(clicked);
+                    if model.selected() == Some(clicked) {
+                        model.deselect();
+                    } else {
+                        model.set_selected(clicked);
+                    }
                 }
                 sudoku.update().unwrap();
             }))?;

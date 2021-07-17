@@ -3,7 +3,7 @@ use std::{num::NonZeroU64, sync::Mutex};
 use solver::{
     config::Config,
     rules::Rules,
-    solving::{Target},
+    solving::Target,
     sudoku::{Buffer, SolveResult},
     threading::{RunnerJobs, ThreadMessage},
     Sudoku,
@@ -49,8 +49,24 @@ impl Runner {
         if self.working {
             return;
         }
+        self.app
+            .controller
+            .editor
+            .state
+            .lock()
+            .unwrap()
+            .set_disabled(true);
+        self.app
+            .controller
+            .info
+            .info
+            .lock()
+            .unwrap()
+            .clear_solve()
+            .unwrap();
+        self.app.controller.update().unwrap();
         self.working = true;
-
+        self.progress = 0.0;
         self.config = Config {
             rules,
             target: Target::Steps,
@@ -149,6 +165,14 @@ impl Runner {
             self.workers
                 .drain(..)
                 .for_each(|(w, _, _, _)| w.terminate());
+            self.app
+                .controller
+                .editor
+                .state
+                .lock()
+                .unwrap()
+                .set_disabled(false);
+            self.app.controller.update().unwrap();
             return;
         }
         let mut done = self.queue.is_empty();
@@ -162,7 +186,13 @@ impl Runner {
                 self.workers[i].2 = total;
                 self.workers[i]
                     .0
-                    .post_message(JsValue::from_serde(&ThreadMessage::Job(Box::new((self.config.clone(), job)))).unwrap())
+                    .post_message(
+                        JsValue::from_serde(&ThreadMessage::Job(Box::new((
+                            self.config.clone(),
+                            job,
+                        ))))
+                        .unwrap(),
+                    )
                     .unwrap();
                 done = false;
             }
@@ -247,6 +277,7 @@ impl App {
     }
 
     pub fn on_worker_msg(&self, id: u32, msg: JsValue) {
+        webelements::log!(&msg);
         let msg = msg.into_serde().unwrap();
         self.runner.lock().unwrap().worker_msg(id, msg);
     }
