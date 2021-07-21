@@ -12,8 +12,6 @@ use crate::util::InitCell;
         <InfoStat we_field="guesses" we_element />
         <InfoStat we_field="g_steps" we_element />
         <InfoStat we_field="g_total" we_element />
-
-        <Progress we_field="progress" we_element />
     </div>
 )]
 #[derive(Debug, Clone)]
@@ -42,44 +40,6 @@ impl Info {
         self.guesses.update(info)?;
         self.g_steps.update(info)?;
         self.g_total.update(info)?;
-
-        self.progress.update(info)?;
-        Ok(())
-    }
-}
-
-#[we_builder(
-    <div class="progress">
-        <div class="progress-bar">
-            <div class="progress-bar-part progress-bar-1" />
-            <div class="progress-bar-part progress-bar-2" />
-            <div class="progress-bar-part progress-bar-3" />
-            <div class="progress-bar-part progress-bar-4" />
-            <div class="progress-bar-part progress-bar-5" />
-            <div class="progress-bar-part progress-bar-6" />
-        </div>
-        <p class="progress-text" />
-    </div>
-)]
-#[derive(Debug, Clone, WebElement)]
-pub struct Progress {}
-
-impl Progress {
-    pub fn update(&self, info: &InfoController) -> Result<()> {
-        let _ = info;
-        // let info = info.info.borrow();
-
-        // let mut chance = 0.0;
-        // let mut part = 1;
-        // if let Some(progress) = info.progress() {
-        //     for &(g, t) in progress {
-        //         chance += (g as f64 / t as f64) / part as f64;
-        //         part *= t;
-        //     }
-        // }
-
-        // self.chance.set_text(format!("{:.2}%", chance * 100.0));
-
         Ok(())
     }
 }

@@ -118,12 +118,12 @@ impl SudokuInfo {
             style
                 .set_property(
                     "--progress",
-                    &format!("{:.2}", progress),
+                    &format!("{:.2}%", progress*100.0),
                 )
                 .unwrap();
         } else {
             style
-                .set_property("--progress", &format!("'{:.2}%'", 0.0))
+                .set_property("--progress", &format!("{:.2}%", 0.0))
                 .unwrap();
         }
 

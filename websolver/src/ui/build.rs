@@ -64,9 +64,18 @@ impl Runner {
             .unwrap()
             .clear_solve()
             .unwrap();
+        self.app
+            .controller
+            .info
+            .info
+            .lock()
+            .unwrap()
+            .set_progress(0.0)
+            .unwrap();
         self.app.controller.update().unwrap();
         self.working = true;
         self.progress = 0.0;
+        self.reported = 0.0;
         self.config = Config {
             rules,
             target: Target::Steps,
@@ -76,6 +85,7 @@ impl Runner {
         self.config.add_rules_solvers();
         let mut buffer = Buffer::new(sudoku);
         let entry = buffer.pop().unwrap();
+        self.queue.clear();
         self.queue.push(RunnerJobs {
             buffer,
             entries: vec![entry],
