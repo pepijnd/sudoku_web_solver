@@ -167,6 +167,10 @@
     }
   }
 
+  &.cage-target .bubble .bubble-bg {
+    background-color: darkred;
+  }
+
   .bubble {
     @include fill;
 
@@ -183,6 +187,7 @@
         padding-top: 5%;
         text-align: center;
         font-size: 33%;
+        pointer-events: auto;
       }
     }
   }

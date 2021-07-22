@@ -3,6 +3,7 @@ use webelements::{we_builder, Result, WebElement};
 
 use crate::ui::controller::app::AppController;
 use crate::ui::controller::sudoku::SudokuController;
+use crate::ui::editor::EditorMode;
 use crate::util::InitCell;
 
 #[we_builder(
@@ -81,17 +82,17 @@ impl CellBox {
     }
 
     pub fn set_bubble(&self, content: Option<&str>) {
-        // if content.is_some() {
-        //     self.options.placeholder.remove_class("hidden");
-        // } else {
-        //     self.options.placeholder.add_class("hidden");
-        // }
         self.bubble.set_content(content);
+    }
+
+    pub fn bubble(&self) -> &Bubble {
+        &self.bubble
     }
 
     pub fn update(&self, sudoku: &SudokuController) {
         {
             let info = sudoku.app.info.info.lock().unwrap();
+            let state = sudoku.app.editor.state.lock().unwrap();
             let model = sudoku.state.borrow();
             let step = info
                 .solve_step()
@@ -100,7 +101,13 @@ impl CellBox {
             let value = model.start().cell(self.cell);
             debug_assert!(value <= 9, "invalid cell value {}", value);
             self.number.remove_class("starting state empty");
-            self.remove_class("target source selected");
+            self.remove_class("target source selected cage-target");
+
+            if let Some(target) = state.sum_target() {
+                if target == self.cell {
+                    self.add_class("cage-target");
+                }
+            }
 
             if info.solve().is_some() {
                 self.options.remove_class("hidden");
@@ -133,7 +140,7 @@ impl CellBox {
             }
 
             if let Some(selected) = model.selected() {
-                if selected == self.cell {
+                if selected == self.cell && state.mode() == EditorMode::Default {
                     self.add_class("selected");
                 }
             }

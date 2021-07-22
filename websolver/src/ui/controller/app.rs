@@ -8,7 +8,7 @@ use crate::util::InitCell;
 
 #[derive(Debug, Clone)]
 pub struct AppController {
-    element: AppElement,
+    pub element: AppElement,
     pub editor: InitCell<EditorController>,
     pub info: InitCell<InfoController>,
     pub sudoku: InitCell<SudokuController>,

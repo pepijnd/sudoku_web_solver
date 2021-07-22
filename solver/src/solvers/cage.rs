@@ -38,6 +38,7 @@ impl CageSolver {
                     cage_cells.push((cell, CellState::Option(options)));
                 }
             }
+            if cage_cells.is_empty() { break }
             let size = cage_cells.len();
             let mut sums = (0..size)
                 .map(|i| (cage_cells[i].0, CellOptions::default()))

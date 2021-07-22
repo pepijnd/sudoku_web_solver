@@ -1,6 +1,7 @@
 @import "./mixins.scss";
 @import "./variables.scss";
 @import "./sudoku.scss";
+@import "./editor.scss";
 
 html {
   font-family: Helvetica, Arial, sans-serif;
@@ -53,10 +54,6 @@ html {
   display: flex;
   grid-template-columns: 1fr auto;
   justify-content: center;
-}
-
-.app-options {
-  display: none;
 }
 
 .text-inline {

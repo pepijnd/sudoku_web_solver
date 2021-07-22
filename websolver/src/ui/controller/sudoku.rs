@@ -7,6 +7,7 @@ use solver::Solve;
 use webelements::Result;
 
 use super::app::AppController;
+use crate::ui::editor::{EditorAction, EditorMode};
 use crate::ui::sudoku::{Sudoku, SudokuModel, SudokuStateModel};
 use crate::util::InitCell;
 
@@ -35,14 +36,17 @@ impl SudokuController {
 
     pub fn build(app: InitCell<AppController>, element: &Sudoku) -> Result<Self> {
         let sudoku = InitCell::clone(&app.sudoku);
+        let editor = InitCell::clone(&app.editor);
         webelements::document()?
             .on_key(move |event| {
                 {
                     if sudoku.app.editor.disabled() {
                         return;
                     }
-                    let mut model = sudoku.state.borrow_mut();
-                    let selected = model.selected();
+                    let selected = {
+                        let model = sudoku.state.borrow_mut();
+                        model.selected()
+                    };
                     if let Some(mut selected) = selected {
                         match &*event.key() {
                             "ArrowLeft" => {
@@ -66,38 +70,73 @@ impl SudokuController {
                                 }
                             }
                             "Delete" => {
-                                model.start_mut().set_cell(selected, 0);
+                                sudoku.state.borrow_mut().start_mut().set_cell(selected, 0);
                             }
                             str => {
                                 if let Ok(value) = str.parse::<u8>() {
                                     if value <= 9 {
-                                        model.start_mut().set_cell(selected, value);
+                                        editor.on_action(EditorAction::SetValue(value)).unwrap();
                                     }
                                 }
                             }
                         }
-                        model.set_selected(selected);
+                        sudoku.state.borrow_mut().set_selected(selected);
                     }
                 }
                 sudoku.update().unwrap()
             })
             .unwrap();
 
+        let editor = InitCell::clone(&app.editor);
+        webelements::document()?.on_mouseup(move |_| {
+            editor.state.lock().unwrap().set_drag(None);
+        })?;
+
         for cell in element.cells() {
             let clicked = cell.cell();
             let sudoku = InitCell::clone(&app.sudoku);
-            cell.on_click(Box::new(move |_event| {
-                {
-                    if sudoku.app.editor.disabled() { return }
-                    let mut model = sudoku.state.borrow_mut();
-                    if model.selected() == Some(clicked) {
-                        model.deselect();
-                    } else {
-                        model.set_selected(clicked);
+            let editor = InitCell::clone(&app.editor);
+            cell.on_click(move |_event| {
+                match editor.mode() {
+                    EditorMode::Default => {
+                        if sudoku.app.editor.disabled() {
+                            return;
+                        }
+                        let mut model = sudoku.state.borrow_mut();
+                        if model.selected() == Some(clicked) {
+                            model.deselect();
+                        } else {
+                            model.set_selected(clicked);
+                        }
+                    }
+                    EditorMode::Cages => {
+                        editor.on_action(EditorAction::Clicked(clicked)).unwrap();
                     }
                 }
                 sudoku.update().unwrap();
-            }))?;
+            })?;
+
+            let editor = InitCell::clone(&app.editor);
+            cell.on_mousedown(move |_| {
+                if editor.mode() == EditorMode::Cages {
+                    editor.state.lock().unwrap().set_drag(Some(clicked));
+                }
+            })?;
+
+            let editor = InitCell::clone(&app.editor);
+            cell.on_mouseenter(move |_| {
+                if editor.mode() == EditorMode::Cages {
+                    editor.on_action(EditorAction::Dragged(clicked)).unwrap();
+                }
+            })?;
+
+            let editor = InitCell::clone(&app.editor);
+            cell.bubble().on_click(move |e| {
+                if editor.mode() == EditorMode::Cages {
+                    editor.on_action(EditorAction::CageSum(clicked)).unwrap();
+                    e.stop_propagation();
+                }
+            })?;
         }
         Ok(Self {
             app: InitCell::clone(&app),

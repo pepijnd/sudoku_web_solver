@@ -1,6 +1,11 @@
+use solver::Cell;
+
 #[derive(Debug)]
 pub struct EditorState {
     disabled: bool,
+    mode: EditorMode,
+    drag_select: Option<Cell>,
+    set_sum: Option<Cell>
 }
 
 impl EditorState {
@@ -11,12 +16,39 @@ impl EditorState {
     pub fn disabled(&self) -> bool {
         self.disabled
     }
+
+    pub fn set_mode(&mut self, mode: EditorMode) {
+        self.mode = mode;
+    }
+
+    pub fn mode(&self) -> EditorMode {
+        self.mode
+    }
+
+    pub fn set_drag(&mut self, cell: Option<Cell>) {
+        self.drag_select = cell;
+    }
+
+    pub fn drag(&self) -> Option<Cell> {
+        self.drag_select
+    }
+
+    pub fn set_sum_target(&mut self, cell: Option<Cell>) {
+        self.set_sum = cell;
+    }
+
+    pub fn sum_target(&self) -> Option<Cell> {
+        self.set_sum
+    }
 }
 
 impl Default for EditorState {
     fn default() -> Self {
         Self {
             disabled: false,
+            mode: EditorMode::Default,
+            drag_select: None,
+            set_sum: None
         }
     }
 }
@@ -33,6 +65,10 @@ pub enum EditorAction {
     Next,
     Last,
     None,
+    SetMode(EditorMode),
+    Dragged(Cell),
+    Clicked(Cell),
+    CageSum(Cell),
 }
 
 impl Default for EditorAction {
@@ -62,5 +98,17 @@ impl std::fmt::Display for EditorAction {
             _ => "N/A".to_string(),
         };
         write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EditorMode {
+    Default,
+    Cages,
+}
+
+impl Default for EditorMode {
+    fn default() -> Self {
+        Self::Default
     }
 }

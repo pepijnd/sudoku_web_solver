@@ -171,20 +171,6 @@ impl Runner {
             }
             _ => {}
         }
-        if !self.working {
-            self.workers
-                .drain(..)
-                .for_each(|(w, _, _, _)| w.terminate());
-            self.app
-                .controller
-                .editor
-                .state
-                .lock()
-                .unwrap()
-                .set_disabled(false);
-            self.app.controller.update().unwrap();
-            return;
-        }
         let mut done = self.queue.is_empty();
         let mut progress = self.progress;
         for i in 0..self.workers.len() {
@@ -222,6 +208,19 @@ impl Runner {
         if done {
             self.working = false;
         }
+        if !self.working {
+            self.workers
+                .drain(..)
+                .for_each(|(w, _, _, _)| w.terminate());
+            self.app
+                .controller
+                .editor
+                .state
+                .lock()
+                .unwrap()
+                .set_disabled(false);
+            self.app.controller.update().unwrap();
+        }
     }
 }
 
@@ -254,17 +253,23 @@ impl App {
     pub fn start(&self, worker: JsValue) -> Result<(), JsValue> {
         InitCell::init(&self.runner, Mutex::new(Runner::new(self.clone(), worker)));
 
+        let a = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0,
+        ];
+
         let sudoku = Sudoku::from(
-            "451279836936.....................................................................",
-            // ".................................................................................",
+            // "451279836936.....................................................................",
+            "............5........................................7..........8............3...",
         );
 
         let cages = solver::rules::Cages {
-            cages: vec![20, 27, 26, 24, 28, 17, 18, 30, 16, 24],
+            cages: vec![30, 45, 17, 20, 21, 12, 21, 17, 35, 10, 12, 35],
             cells: [
-                0, 0, 0, 0, 1, 2, 2, 2, 3, 0, 0, 0, 0, 1, 1, 1, 2, 3, 0, 0, 0, 0, 4, 4, 5, 5, 3, 0,
-                0, 0, 0, 0, 4, 4, 5, 3, 6, 7, 8, 0, 0, 0, 4, 5, 3, 6, 7, 8, 8, 0, 0, 0, 0, 0, 6, 7,
-                7, 8, 8, 0, 0, 0, 0, 6, 9, 10, 10, 10, 0, 0, 0, 0, 6, 9, 9, 9, 10, 0, 0, 0, 0,
+                0, 1, 1, 1, 0, 0, 0, 4, 0, 1, 1, 3, 0, 0, 5, 5, 4, 4, 1, 3, 3, 3, 0, 5, 6, 7, 7, 1,
+                0, 3, 0, 0, 6, 6, 6, 7, 2, 0, 0, 0, 0, 0, 8, 0, 7, 2, 0, 10, 10, 10, 0, 8, 8, 0, 2,
+                11, 11, 0, 9, 9, 9, 8, 8, 2, 0, 11, 0, 0, 0, 9, 9, 0, 2, 2, 2, 2, 2, 0, 9, 9, 0,
             ],
         };
 
@@ -287,7 +292,6 @@ impl App {
     }
 
     pub fn on_worker_msg(&self, id: u32, msg: JsValue) {
-        webelements::log!(&msg);
         let msg = msg.into_serde().unwrap();
         self.runner.lock().unwrap().worker_msg(id, msg);
     }

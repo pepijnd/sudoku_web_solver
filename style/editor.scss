@@ -1,0 +1,49 @@
+.app-options {
+  margin: 1em;
+  width: 25em;
+  border: 1px solid white;
+}
+
+.editor {
+  margin: 0.5em;
+
+  &.header {
+    font: 2.5em sans-serif;
+    text-align: center;
+  }
+
+  &.option {
+    font: 1.5em sans-serif;
+  }
+
+  &.rule {
+    display: flex;
+    align-items: center;
+    padding-left: 1em;
+    width: 18em;
+    margin: 0;
+    &.active {
+      .config-rule {
+        background-color: darkblue;
+      }
+    }
+  }
+  &.config-rule {
+    border: 1px solid white;
+    background-color: rgb(55, 55, 55);
+    width: 75%;
+    padding: .25em;
+    font: 1.25em sans-serif;
+  }
+  &.clear-rule {
+    border: 2px solid red;
+    height: 2em;
+    width: 2em;
+    text-align: center;
+    &::after {
+        font: 1.5em sans-serif;
+        color: red;
+        content: "X";
+    }
+  }
+}

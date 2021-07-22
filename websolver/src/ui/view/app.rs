@@ -5,6 +5,7 @@ use crate::ui::controller::editor::EditorController;
 use crate::ui::view::editor::Editor;
 use crate::ui::view::info::Info;
 use crate::ui::view::sudoku::Sudoku;
+use crate::ui::view::rules::Rules;
 use crate::util::InitCell;
 
 #[we_builder(
@@ -20,7 +21,9 @@ use crate::util::InitCell;
             <Editor we_field="editor" we_element />
             <Info we_field="info" we_element />
         </div>
-        <div class="app-options"></div>
+        <div class="app-options">
+            <Rules we_field="rules" we_element />
+        </div>
     </div>
 )]
 #[derive(Debug, Clone, WebElement)]
@@ -37,6 +40,7 @@ impl AppElement {
         self.modal.update(&app.editor)?;
         self.editor.update(&app.editor)?;
         self.info.update(&app.info)?;
+        self.rules.update(&app.editor)?;
         Ok(())
     }
 }

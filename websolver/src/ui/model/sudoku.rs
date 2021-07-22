@@ -49,6 +49,10 @@ impl SudokuStateModel {
     pub fn deselect(&mut self) {
         self.selected.take();
     }
+
+    pub fn clear_rules(&mut self) {
+        self.rules = Rules::default();
+    }
 }
 
 impl Default for SudokuStateModel {
